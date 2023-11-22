@@ -1,4 +1,4 @@
 # Libless-NN
 A libraryless Neural Network in python (not even numpy)
 
-uhh when the when the idk. very bugged, not practical afaik as numpy is better. mostly for understanding how exactly a NN works
+A rather impractical Neural Network scaleable to theoretically any size. Used to better understand how a Neural Network works via an array based system
