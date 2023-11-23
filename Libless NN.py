@@ -1,7 +1,7 @@
 import math
 import random
 E = math.e
-random.seed(31415)
+random.seed(0)
 
 
 class Layer:
@@ -67,8 +67,8 @@ class Layer:
                         self.passed_on_loss_array[i] *= 0.1
         if self.activation_function_type == "Softmax":
             for i in range(len(self.passed_on_loss_array)):
-                self.passed_on_loss_array[i] *= (1 - self.outputs[i]) * self.outputs[i]
-                #self.passed_on_loss_array[i] *= E**self.passed_on_loss_array[i]
+                #self.passed_on_loss_array[i] *= (1 - self.outputs[i]) * self.outputs[i]
+                self.passed_on_loss_array[i] *= E**self.passed_on_loss_array[i]
 
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
@@ -173,6 +173,6 @@ class NN:
         self.train(1, 0, testing_data, testing_answers, True, 1000000000000000)
 
 
-neural = NN(1, 2, 100, 1, "ReLU", "ReLU")
+neural = NN(1, 3, 20, 1, "ReLU", "ReLU")
 neural.train(100, 0.01, classification_data, classification_answers, False, 10)
 neural.test(testing_data, testing_answers)
