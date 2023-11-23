@@ -70,7 +70,7 @@ class Layer:
 
         for i in range(len(self.weights)):
             for j in range(len(self.weights[0])):
-                self.weights[i][j] -= self.passed_on_loss_array[i]*self.previous_layer_outputs[i]*learning_rate
+                self.weights[i][j] -= self.passed_on_loss_array[i]*self.previous_layer_outputs[j]*learning_rate
 
         loss_to_pass = [0] * len(self.weights[0])
         for i in range(len(loss_to_pass)):
