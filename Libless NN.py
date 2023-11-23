@@ -169,6 +169,6 @@ class NN:
         self.train(1, 0, testing_data, testing_answers, True, 1000000000000000)
 
 
-neural = NN(3, 3, 16, 1, "ReLU", "Leaky_ReLU")
-neural.train(1000, 0.001, classification_data, classification_answers, False, 32)
+neural = NN(1, 3, 16, 1, "ReLU", "ReLU")
+neural.train(1000, 0.001, classification_data, classification_answers, False, 10)
 neural.test(testing_data, testing_answers)
