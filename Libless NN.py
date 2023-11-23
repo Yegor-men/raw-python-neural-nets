@@ -137,7 +137,7 @@ class NN:
                         print(f"actual: {data_output[j]}")
                         if predicted_ans == data_output[j]:
                             current_accuracy_measure += 1
-            print(f"Epochs completed: {round(100*current_epoch/epochs,2)}%")
+            print(f"Epochs completed: {current_epoch}/{epochs}")
             current_epoch += 1
             
         
