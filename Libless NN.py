@@ -5,12 +5,14 @@ random.seed(0)
 
 
 class Layer:
-    def __init__(self, previous_height, height):
+    def __init__(self, previous_height, height, activation_function_type):
         self.biases = [(1*(random.random())*2-1) for n in range(height)]
         self.weights = [[(1*(random.random())*2-1) for n in range(previous_height)] for m in range(height)]
        
         self.delta_biases = [0] * height
         self.delta_weights = [[0] * previous_height for _ in range(height)]
+
+        self.activation_function_type = activation_function_type
     
     def forward(self, previous_layer_outputs):
         self.previous_layer_outputs = previous_layer_outputs
@@ -20,23 +22,21 @@ class Layer:
                 self.outputs[j] += ((previous_layer_outputs[k]) * (self.weights[j][k]))
             self.outputs[j] += self.biases[j]
 
-    def activation_function(self, activation_function_type, is_last_layer):
-        self.is_last_layer = is_last_layer
-        self.activation_function_type = activation_function_type
+    def activation_function(self):
+        if self.activation_function_type == "None":
+            self.post_activation_outputs = self.outputs
         if self.activation_function_type == "ReLU":
-            if self.is_last_layer == False:
-                self.outputs = [max(0, n) for n in self.outputs]
+            self.post_activation_outputs = [max(0, n) for n in self.outputs]
         if self.activation_function_type == "Leaky_ReLU":
-            if self.is_last_layer == False:
-                self.outputs = [0.1*n if n<0 else n for n in self.outputs]
+            self.post_activation_outputs = [0.1*n if n<0 else n for n in self.outputs]
         if self.activation_function_type == "Softmax":
             maximum_output = max(self.outputs)
-            self.outputs = [self.outputs[n]-maximum_output for n in range(len(self.outputs))]
+            self.post_activation_outputs = [self.outputs[n]-maximum_output for n in range(len(self.outputs))]
             sum = 0
             for i in range(len(self.outputs)):
                 sum += E**(self.outputs[i])
             for i in range(len(self.outputs)):
-                self.outputs[i] = (E**(self.outputs[i]))/sum
+                self.post_activation_outputs[i] = (E**(self.outputs[i]))/sum
 
     def loss(self, prediced_list, expected_list, type):
         self.loss_type = type
@@ -54,18 +54,13 @@ class Layer:
                 self.mean_loss += loss[i]
         
     def back_prop(self, inputted_loss_array):
-        self.passed_on_loss_array = inputted_loss_array
-        if self.activation_function_type == "ReLU":
-            if self.is_last_layer == False:
-                for i in range(len(self.passed_on_loss_array)):
-                    if self.passed_on_loss_array[i]<1:
-                        self.passed_on_loss_array[i] = 0
-        if self.activation_function_type == "Leaky_ReLU":
-            if self.is_last_layer == False:
-                for i in range(len(self.passed_on_loss_array)):
-                    if self.passed_on_loss_array[i] < 0:
-                        self.passed_on_loss_array[i] *= 0.1
-        if self.activation_function_type == "Softmax":
+        if self.activation_function_type == "None":
+            self.passed_on_loss_array = inputted_loss_array
+        elif self.activation_function_type == "ReLU":
+            self.passed_on_loss_array = [n * 0 if n < 0 else 1 for n in inputted_loss_array]
+        elif self.activation_function_type == "Leaky_ReLU":
+            self.passed_on_loss_array = [n * 0.1 if n < 0 else 1 for n in inputted_loss_array]
+        elif self.activation_function_type == "Softmax":
             for i in range(len(self.passed_on_loss_array)):
                 #self.passed_on_loss_array[i] *= (1 - self.outputs[i]) * self.outputs[i]
                 self.passed_on_loss_array[i] *= E**self.passed_on_loss_array[i]
@@ -86,12 +81,10 @@ class Layer:
         for i in range(len(self.delta_weights)):
             for j in range(len(self.delta_weights[0])):
                 self.delta_weights[i][j] /= batch_size
-                self.delta_weights[i][j] *= learning_rate
-                self.weights[i][j] -= self.delta_weights[i][j]
+                self.weights[i][j] -= self.delta_weights[i][j]*learning_rate
         for i in range(len(self.biases)):
             self.delta_biases[i] /= batch_size
-            self.delta_biases[i] *= learning_rate
-            self.biases[i] -= self.delta_biases[i]
+            self.biases[i] -= self.delta_biases[i]*learning_rate
 
         self.delta_biases = [0] * len(self.biases)
         self.delta_weights = [[0] * len(self.weights[0]) for _ in range(len(self.weights))]
@@ -108,70 +101,77 @@ class NN:
     def __init__(self, input_size, inner_layers_number, height, output_size, inner_layer_activation, last_layer_activation):
         self.inner_layer_activation = inner_layer_activation
         self.last_layer_activation = last_layer_activation
-        self.layers = [[]] * (inner_layers_number + 2) 
-        self.layers[0] = Layer(input_size, height)
-        self.layers[-1] = Layer(height, output_size)
+        self.layers = [[]] * (inner_layers_number + 2)
+        self.layers[0] = Layer(input_size, height, inner_layer_activation)
+        self.layers[-1] = Layer(height, output_size, last_layer_activation)
         for i in range(inner_layers_number):
-            self.layers[i+1] = Layer(height, height)
+            self.layers[i+1] = Layer(height, height, inner_layer_activation)
     
-    def train(self, epochs, learning_rate, data_train, data_output, is_testing, batch_size):
+    def train(self, epochs, learning_rate, training_data, training_answers, is_testing, batch_size):
         current_epoch = 0
         current_batch = 0
+        batch_loss = 0
         for i in range(epochs):
             current_epoch_loss = 0
-            batch_loss = 0
-            for j in range(len(data_train)):
-                self.layers[0].forward(data_train[j])
-                self.layers[0].activation_function(self.inner_layer_activation, False)
+            combined_data = list(zip(training_data, training_answers))
+            # Shuffle the combined data
+            random.shuffle(combined_data)
+            # Split the shuffled data back into training_data and training_answers
+            training_data, training_answers = zip(*combined_data)
+
+            for j in range(len(training_data)):
+                current_batch += 1
+                #start layer forward and activ
+                self.layers[0].forward(training_data[j])
+                self.layers[0].activation_function()
+                #middle layer forward and activ
                 for k in range(len(self.layers)-2):
-                    self.layers[k+1].forward(self.layers[k].outputs)
-                    self.layers[k+1].activation_function(self.inner_layer_activation, False)
-                self.layers[-1].forward(self.layers[-2].outputs)
-                self.layers[-1].activation_function(self.last_layer_activation, True)
-                # print(f"Outputted: {self.layers[-1].outputs}")
-                # print(f"Actual: {data_output[j]}")
+                    self.layers[k+1].forward(self.layers[k].post_activation_outputs)
+                    self.layers[k+1].activation_function()
+                #last layer forward and activ
+                self.layers[-1].forward(self.layers[-2].post_activation_outputs)
+                self.layers[-1].activation_function()
+                # debugging purposes print
+                # print(f"Outputted: {self.layers[-1].post_activation_outputs}")
+                # print(f"Actual: {training_answers[j]}")
                 #now for loss
                 if is_testing == False:
-                    self.layers[-1].loss(self.layers[-1].outputs, data_output[j],"mse")
+                    loss_function = "log" if self.last_layer_activation == "Softmax" else "mse"
+                    self.layers[-1].loss(self.layers[-1].post_activation_outputs, training_answers[j],loss_function)
                     batch_loss += self.layers[-1].mean_loss
+                    current_epoch_loss += self.layers[-1].mean_loss
                     #now for back prop
                     self.layers[-1].back_prop(self.layers[-1].d_loss)
-                    current_epoch_loss += self.layers[-1].mean_loss
                     for l in range(len(self.layers)-1):
                         self.layers[-l-2].back_prop(self.layers[-l-1].loss_to_pass)
-                    current_batch += 1
+                    
                     if current_batch == batch_size:
                         current_batch = 0
                         print(f"{round(batch_loss/batch_size,3)}")
                         for i in range(len(self.layers)):
                             self.layers[i].update_w_and_b(batch_size, learning_rate)
                         batch_loss = 0
+                
                 elif is_testing == True:
                     #print("----- TESTING -----")
                     if self.last_layer_activation != "Softmax":
-                        self.layers[-1].loss(self.layers[-1].outputs, data_output[j],"mse")
+                        self.layers[-1].loss(self.layers[-1].post_activation_outputs, training_answers[j],"mse")
                         current_epoch_loss += self.layers[-1].mean_loss
                     elif self.last_layer_activation == "Softmax":
                         #fix to use max value instead of rounded
-                        print(self.layers[-1].outputs)
-                        predicted_ans = [0] * len(self.layers[-1].outputs)
-                        index = predicted_ans.index(max(predicted_ans))
-                        for i in range(len(predicted_ans)):
-                            if i != index:
-                                predicted_ans[i] = 0
-                            else:
-                                predicted_ans[i] = 1
-                        # print(f"predicted: {predicted_ans}")
-                        # print(f"actual: {data_output[j]}")
-                        if predicted_ans == data_output[j]:
-                            pass #fix this
+                        pass #implement proper loss calc for this thing
+            
+        if current_batch > 0:
+            for i in range(len(self.layers)):
+                self.layers[i].update_w_and_b(batch_size, learning_rate)
+            
             current_epoch += 1
-            print(f"Epochs completed: {current_epoch}/{epochs}\nAverage epoch loss: {current_epoch_loss/len(data_train)}")
+            print(f"Epochs completed: {current_epoch}/{epochs}\nAverage epoch loss: {current_epoch_loss/len(training_data)}")
 
     def test(self, testing_data, testing_answers):
         self.train(1, 0, testing_data, testing_answers, True, 1000000000000000)
 
 
-neural = NN(1, 3, 20, 1, "ReLU", "ReLU")
+neural = NN(1, 3, 20, 1, "ReLU", "None")
 neural.train(1000, 0.1, classification_data, classification_answers, False, 50)
 neural.test(testing_data, testing_answers)
