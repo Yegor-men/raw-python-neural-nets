@@ -70,12 +70,12 @@ class Layer:
 
         for i in range(len(self.weights)):
             for j in range(len(self.weights[0])):
-                self.weights[i][j] += self.passed_on_loss_array[i]*self.previous_layer_outputs[j]*learning_rate
+                self.weights[i][j] -= self.passed_on_loss_array[i]*self.previous_layer_outputs[j]*learning_rate
 
         loss_to_pass = [0] * len(self.weights[0])
         for i in range(len(loss_to_pass)):
             for j in range(len(self.weights)):
-                loss_to_pass[i] -= self.passed_on_loss_array[j] * self.weights[j][i]
+                loss_to_pass[i] += self.passed_on_loss_array[j] * self.weights[j][i]
         self.loss_to_pass = loss_to_pass
 
 
@@ -152,5 +152,5 @@ class NN:
 
 
 neural = NN(3, 1, 1, 1, "Leaky_ReLU", "Leaky_ReLU")
-neural.train(1000, 0.001, classification_data, classification_answers, False)
+neural.train(5000, 0.01, classification_data, classification_answers, False)
 neural.test(testing_data, testing_answers)
