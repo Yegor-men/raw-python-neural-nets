@@ -77,11 +77,10 @@ class Layer:
             for j in range(len(self.weights[0])):
                 self.delta_weights[i][j] += self.passed_on_loss_array[i]*self.previous_layer_outputs[j]
 
-        loss_to_pass = [0] * len(self.weights[0])
-        for i in range(len(loss_to_pass)):
+        self.loss_to_pass = [0] * len(self.weights[0])
+        for i in range(len(self.loss_to_pass)):
             for j in range(len(self.weights)):
-                loss_to_pass[i] += self.passed_on_loss_array[j] * self.weights[j][i]
-        self.loss_to_pass = loss_to_pass
+                self.loss_to_pass[i] += self.passed_on_loss_array[j] * self.weights[j][i]
 
     def update_w_and_b(self, batch_size, learning_rate):
         for i in range(len(self.delta_weights)):
@@ -174,5 +173,5 @@ class NN:
 
 
 neural = NN(1, 3, 20, 1, "ReLU", "ReLU")
-neural.train(100, 0.01, classification_data, classification_answers, False, 10)
+neural.train(1000, 0.1, classification_data, classification_answers, False, 50)
 neural.test(testing_data, testing_answers)
