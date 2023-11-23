@@ -147,7 +147,7 @@ class NN:
                     print("----- TESTING -----")
                     if self.last_layer_activation != "Softmax":
                         self.layers[-1].loss(self.layers[-1].outputs, data_output[j],"mse")
-                        current_epoch_loss
+                        current_epoch_loss += self.layers[-1].mean_loss
                     elif self.last_layer_activation == "Softmax":
                         #fix to use max value instead of rounded
                         print(self.layers[-1].outputs)
@@ -162,7 +162,6 @@ class NN:
                         # print(f"actual: {data_output[j]}")
                         if predicted_ans == data_output[j]:
                             pass #fix this
-            
             current_epoch += 1
             print(f"Epochs completed: {current_epoch}/{epochs}\nAverage epoch loss: {current_epoch_loss/len(data_train)}")
 
@@ -171,5 +170,5 @@ class NN:
 
 
 neural = NN(3, 1, 1, 1, "Leaky_ReLU", "Leaky_ReLU")
-neural.train(10000, 0.01, classification_data, classification_answers, False, 32)
+neural.train(50, 0.01, classification_data, classification_answers, False, 32)
 neural.test(testing_data, testing_answers)
