@@ -86,15 +86,17 @@ class Layer:
             for j in range(len(self.delta_weights[0])):
                 self.delta_weights[i][j] /= batch_size
                 self.delta_weights[i][j] *= learning_rate
+                self.weights[i][j] -= self.delta_weights[i][j]
         for i in range(len(self.biases)):
             self.delta_biases[i] /= batch_size
             self.delta_biases[i] *= learning_rate
-        
-        for i in range(len(self.delta_weights)):
-            for j in range(len(self.delta_weights[0])):
-              self.weights[i][j] -= self.delta_weights[i][j]
-        for i in range(len(self.biases)):
             self.biases[i] -= self.delta_biases[i]
+        
+        # for i in range(len(self.delta_weights)):
+        #     for j in range(len(self.delta_weights[0])):
+                
+        # for i in range(len(self.biases)):
+            
 
         self.delta_biases = [0] * len(self.biases)
         self.delta_weights = [[0] * len(self.weights[0]) for _ in range(len(self.weights))]
