@@ -172,13 +172,13 @@ class NN:
 
 #--------------------------------------------------------------------------------------------------------------------------------
 class Training_data:
-    def __init__(self, amount_to_gen):
+    def __init__(self, amount_to_gen, data_domain, data_range, data_mean, round_to):
         self.training_inputs = []
         self.training_outputs = []
         for i in range(amount_to_gen):
-            x1 = round(random.random()*6-3,2)
+            x1 = round(random.random()*data_domain - (data_domain*0.5) + data_mean, round_to)
             self.training_inputs.append([x1])
-            self.training_outputs.append([round(10*math.sin(x1),2)])
+            self.training_outputs.append([round(data_range*math.sin(x1),5)])
     def get_training_inputs(self):
         return(self.training_inputs)
     def get_training_outputs(self):
@@ -186,25 +186,22 @@ class Training_data:
         
 #--------------------------------------------------------------------------------------------------------------------------------
 class Prediction_data:
-    def __init__(self, amount_to_gen):
+    def __init__(self, amount_to_gen, data_domain, data_mean, round_to):
         self.prediction_inputs = []
         for i in range(amount_to_gen):
-            x1 = round(random.random()*6-3,2)
+            x1 = round(random.random()*data_domain - (data_domain*0.5) + data_mean, round_to)
             self.prediction_inputs.append([x1])
     def get_prediction_inputs(self):
         return(self.prediction_inputs)
 
 
 #--------------------------------------------------------------------------------------------------------------------------------
-training_data = Training_data(500)
+training_data = Training_data(500,6,10,3.1415,5) #amount to gen| data domain| data range| data_mean| round to
+prediction_data = Prediction_data(50,6,3.1415,5) #amount to gen| data domain| data_mean| round to
+#--------------------------------------------------------------------------------------------------------------------------------
 
-neural = NN(1, 2, 20, 1, "ReLU", "None")
-neural.train(100, 0.01, training_data.get_training_inputs(), training_data.get_training_outputs(), 50)
-
-prediction_input = []
-
-prediction_data = Prediction_data(50)
-
+neural = NN(1, 2, 20, 1, "Leaky_ReLU", "None")
+neural.train(100, 0.001, training_data.get_training_inputs(), training_data.get_training_outputs(), 50)
 neural.predict(prediction_data.get_prediction_inputs())
 
 print(neural.prediction_outputs)
