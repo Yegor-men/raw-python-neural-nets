@@ -2,6 +2,7 @@ import math
 import random
 E = math.e
 random.seed(0)
+import csv
 
 #--------------------------------------------------------------------------------------------------------------------------------
 class Layer:
@@ -194,27 +195,90 @@ class Prediction_data:
     def get_prediction_outputs(self):
         return(self.prediction_outputs)
 
+#--------------------------------------------------------------------------------------------------------------------------------
+#training_data = Training_data(1000)
+#prediction_data = Prediction_data(50)
+#--------------------------------------------------------------------------------------------------------------------------------
+def one_hot_encoding(data, data_types):
+    output = []
+    for i in range(len(data)):
+        output.append([])
+        for j in range(data_types):
+            if j == data[i]:
+                output[i].append(1)
+            else:
+                output[i].append(0)
+    return(output)
+#-----IRIS-DATA------------------------------------------------------------------------------------------------------------------
+questions = []
+labels = []
+
+with open("Iris.csv", "r") as file:
+    csv_reader = csv.reader(file)
+    next(csv_reader)
+    for row in csv_reader:
+        feature_row = list(map(float, row[1:5]))
+        label = row[5]
+        questions.append(feature_row)
+        labels.append(label)
+
+for i in range(len(questions)):
+    if labels[i] == "Iris-setosa":
+        labels[i] = 0
+    elif labels[i] == "Iris-versicolor":
+        labels[i] = 1
+    elif labels[i] == "Iris-virginica":
+        labels[i] = 2
+
+
+class QuestionsAndAnswers():
+    def __init__(self, questions, answers, amount):
+        self.training_data_questions = questions[:amount]
+        self.training_data_answers = answers[:amount]
+        self.prediction_data_questions = questions[amount:]
+        self.prediction_data_answers = answers[amount:]
+
+    def get_t_q(self):
+        return self.training_data_questions
+    def get_t_a(self):
+        return self.training_data_answers
+    def get_pred_q(self):
+        return self.prediction_data_questions
+    def get_pred_a(self):
+        return self.prediction_data_answers
+
+iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 119)
 
 #--------------------------------------------------------------------------------------------------------------------------------
-training_data = Training_data(1000)
-prediction_data = Prediction_data(50)
-#--------------------------------------------------------------------------------------------------------------------------------
+def classification_compare(prediction, actual):
+        total_correct = 0
+        for i in range(len(prediction)):
+            for j in range(len(prediction[0])):
+                prediction[i][j] = round(prediction[i][j])
+        for i in range(len(prediction)):
+            if prediction[i] == actual[i]:
+                total_correct += 1
+        print(f"Total accuracy: {round((total_correct/len(prediction))*100,5)} %")
 
-neural = NN(2, 3, 30, 2, "Leaky_ReLU", "Softmax")
-neural.train(100, 0.001, training_data.get_training_inputs(), training_data.get_training_outputs(), 50)
-neural.predict(prediction_data.get_prediction_inputs())
+def train_and_test(input_size, inner_layers_amount, neurons_per_layer, output_size, inner_neuron_activation, last_layer_activation, epochs, training_step, training_questions, training_answers, batch_size, predict_questions, predict_answers, is_classification):
+    neural = NN(input_size, inner_layers_amount, neurons_per_layer, output_size, inner_neuron_activation, last_layer_activation)
+    neural.train(epochs, training_step, training_questions, training_answers, batch_size)
+    neural.predict(predict_questions)
+    if is_classification == False:
+        print(neural.prediction_outputs)
+    if is_classification == True:
+        classification_compare(neural.prediction_outputs, predict_answers)
 
-#print(neural.prediction_outputs)
-
-#use compare() for classification tasks
-def compare(prediction, actual):
-    total_correct = 0
-    for i in range(len(prediction)):
-        for j in range(len(prediction[0])):
-            prediction[i][j] = round(prediction[i][j])
-    for i in range(len(prediction)):
-        if prediction[i] == actual[i]:
-            total_correct += 1
-    print(f"Total accuracy: {round((total_correct/len(prediction))*100,5)} %")
-
-compare(neural.prediction_outputs,prediction_data.get_prediction_outputs())
+train_and_test(input_size = 4, 
+               inner_layers_amount = 2, 
+               neurons_per_layer = 50, 
+               output_size = 3, 
+               inner_neuron_activation = "Leaky_ReLU", 
+               last_layer_activation = "Softmax", 
+               epochs=100, training_step = 0.1, 
+               training_questions = iris_data.get_t_q(), 
+               training_answers = iris_data.get_t_a(), 
+               batch_size = 10, 
+               predict_questions = iris_data.get_pred_q(), 
+               predict_answers = iris_data.get_pred_a(), 
+               is_classification = True)
