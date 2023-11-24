@@ -179,8 +179,8 @@ class Training_data:
         self.training_inputs = []
         self.training_outputs = []
         for i in range(amount_to_gen):
-            x1 = random.random()*20-5
-            x2 = random.random()*20-5
+            x1 = random.random()*20-10
+            x2 = random.random()*20-10
             self.training_inputs.append([x1, x2])
             if x1**2 + x2**2 <= 25:
                 self.training_outputs.append([0,1])
@@ -197,8 +197,8 @@ class Prediction_data:
         self.prediction_inputs = []
         self.prediction_outputs = []
         for i in range(amount_to_gen):
-            x1 = random.random()*10-5
-            x2 = random.random()*10-5
+            x1 = random.random()*20-10
+            x2 = random.random()*20-10
             self.prediction_inputs.append([x1, x2])
             if x1**2 + x2**2 <= 25:
                 self.prediction_outputs.append([0,1])
@@ -216,7 +216,7 @@ prediction_data = Prediction_data(50) #amount to gen
 #--------------------------------------------------------------------------------------------------------------------------------
 
 neural = NN(2, 3, 30, 2, "Leaky_ReLU", "Softmax")
-neural.train(300, 0.001, training_data.get_training_inputs(), training_data.get_training_outputs(), 50)
+neural.train(100, 0.001, training_data.get_training_inputs(), training_data.get_training_outputs(), 50)
 neural.predict(prediction_data.get_prediction_inputs())
 
 #print(neural.prediction_outputs)
