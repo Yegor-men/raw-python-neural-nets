@@ -196,12 +196,12 @@ class Prediction_data:
 
 
 #--------------------------------------------------------------------------------------------------------------------------------
-training_data = Training_data(500,6,10,3.1415,5) #amount to gen| data domain| data range| data_mean| round to
-prediction_data = Prediction_data(50,6,3.1415,5) #amount to gen| data domain| data_mean| round to
+training_data = Training_data(1000,10,10,5,5) #amount to gen| data domain| data range| data_mean| round to
+prediction_data = Prediction_data(50,10,5,5) #amount to gen| data domain| data_mean| round to
 #--------------------------------------------------------------------------------------------------------------------------------
 
-neural = NN(1, 2, 20, 1, "Leaky_ReLU", "None")
-neural.train(100, 0.001, training_data.get_training_inputs(), training_data.get_training_outputs(), 50)
+neural = NN(1, 2, 20, 1, "ReLU", "None")
+neural.train(1000, 0.001, training_data.get_training_inputs(), training_data.get_training_outputs(), 50)
 neural.predict(prediction_data.get_prediction_inputs())
 
 print(neural.prediction_outputs)
