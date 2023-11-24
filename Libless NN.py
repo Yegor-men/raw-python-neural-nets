@@ -233,10 +233,17 @@ for i in range(len(questions)):
 
 class QuestionsAndAnswers():
     def __init__(self, questions, answers, amount):
+        combined_data = list(zip(questions, answers))
+        # Shuffle the combined data
+        random.shuffle(combined_data)
+        # Split the shuffled data back into training_data and training_answers
+        questions, answers = zip(*combined_data)
+        
         self.training_data_questions = questions[:amount]
         self.training_data_answers = answers[:amount]
         self.prediction_data_questions = questions[amount:]
         self.prediction_data_answers = answers[amount:]
+
 
     def get_t_q(self):
         return self.training_data_questions
@@ -247,14 +254,19 @@ class QuestionsAndAnswers():
     def get_pred_a(self):
         return self.prediction_data_answers
 
-iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 119)
+iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 129)
 
 #--------------------------------------------------------------------------------------------------------------------------------
 def classification_compare(prediction, actual):
         total_correct = 0
         for i in range(len(prediction)):
+            index_of_max = prediction[i].index(max(prediction[i]))
             for j in range(len(prediction[0])):
-                prediction[i][j] = round(prediction[i][j])
+                if j == index_of_max:
+                    prediction[i][j] = 1
+                else:
+                    prediction[i][j] = 0
+        print(prediction)
         for i in range(len(prediction)):
             if prediction[i] == actual[i]:
                 total_correct += 1
@@ -270,15 +282,15 @@ def train_and_test(input_size, inner_layers_amount, neurons_per_layer, output_si
         classification_compare(neural.prediction_outputs, predict_answers)
 
 train_and_test(input_size = 4, 
-               inner_layers_amount = 2, 
-               neurons_per_layer = 50, 
+               inner_layers_amount = 3, 
+               neurons_per_layer = 30, 
                output_size = 3, 
-               inner_neuron_activation = "Leaky_ReLU", 
+               inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs=100, training_step = 0.1, 
+               epochs=300, training_step = 0.01, 
                training_questions = iris_data.get_t_q(), 
                training_answers = iris_data.get_t_a(), 
-               batch_size = 10, 
+               batch_size = 20, 
                predict_questions = iris_data.get_pred_q(), 
                predict_answers = iris_data.get_pred_a(), 
                is_classification = True)
