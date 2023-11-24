@@ -30,13 +30,16 @@ class Layer:
         if self.activation_function_type == "Leaky_ReLU":
             self.post_activation_outputs = [0.1*n if n<0 else n for n in self.outputs]
         if self.activation_function_type == "Softmax":
-            maximum_output = max(self.outputs)
-            self.post_activation_outputs = [self.outputs[n]-maximum_output for n in range(len(self.outputs))]
+            self.post_activation_outputs = self.outputs
+            maximum_output = max(self.post_activation_outputs)
             sum = 0
-            for i in range(len(self.outputs)):
-                sum += E**(self.outputs[i])
-            for i in range(len(self.outputs)):
-                self.post_activation_outputs[i] = (E**(self.outputs[i]))/sum
+            for i in range(len(self.post_activation_outputs)):
+                self.post_activation_outputs[i] -= maximum_output
+                self.post_activation_outputs[i] = E**self.post_activation_outputs[i]
+                sum += self.post_activation_outputs[i]
+            for i in range(len(self.post_activation_outputs)):
+                self.post_activation_outputs[i] /= sum
+
 
     def loss(self, prediced_list, expected_list, type):
         self.loss_type = type
@@ -47,11 +50,11 @@ class Layer:
             self.mean_loss /= len(prediced_list)
             self.d_loss = [(prediced_list[i] - expected_list[i]) for i in range(len(prediced_list))]
         elif self.loss_type == "log":
-            epsilon = 1e-15  # Small constant to avoid taking the logarithm of zero
-            loss = [math.log(max(prediced_list[i] - expected_list[i], epsilon)) for i in range(len(prediced_list))]
             self.mean_loss = 0
-            for i in range(len(loss)):
-                self.mean_loss += loss[i]
+            for i in range(len(prediced_list)):
+                self.mean_loss += 0.5*((prediced_list[i] - expected_list[i])**2)
+            self.mean_loss /= len(prediced_list)
+            self.d_loss = [(prediced_list[i] - expected_list[i]) for i in range(len(prediced_list))]
         
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = inputted_loss_array
@@ -69,8 +72,8 @@ class Layer:
                     self.passed_on_loss_array[i] *= 1
         elif self.activation_function_type == "Softmax":
             for i in range(len(self.passed_on_loss_array)):
-                #self.passed_on_loss_array[i] *= (1 - self.outputs[i]) * self.outputs[i]
-                self.passed_on_loss_array[i] *= E**self.passed_on_loss_array[i]
+                self.passed_on_loss_array[i] *= (1 - self.outputs[i]) * self.outputs[i]
+                #self.passed_on_loss_array[i] *= E**self.passed_on_loss_array[i]
 
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
@@ -172,13 +175,17 @@ class NN:
 
 #--------------------------------------------------------------------------------------------------------------------------------
 class Training_data:
-    def __init__(self, amount_to_gen, data_domain, data_range, data_mean, round_to):
+    def __init__(self, amount_to_gen):
         self.training_inputs = []
         self.training_outputs = []
         for i in range(amount_to_gen):
-            x1 = round(random.random()*data_domain - (data_domain*0.5) + data_mean, round_to)
-            self.training_inputs.append([x1])
-            self.training_outputs.append([round(data_range*math.sin(x1),5)])
+            x1 = random.random()*20-5
+            x2 = random.random()*20-5
+            self.training_inputs.append([x1, x2])
+            if x1**2 + x2**2 <= 25:
+                self.training_outputs.append([0,1])
+            else:
+                self.training_outputs.append([1,0])
     def get_training_inputs(self):
         return(self.training_inputs)
     def get_training_outputs(self):
@@ -186,22 +193,43 @@ class Training_data:
         
 #--------------------------------------------------------------------------------------------------------------------------------
 class Prediction_data:
-    def __init__(self, amount_to_gen, data_domain, data_mean, round_to):
+    def __init__(self, amount_to_gen):
         self.prediction_inputs = []
+        self.prediction_outputs = []
         for i in range(amount_to_gen):
-            x1 = round(random.random()*data_domain - (data_domain*0.5) + data_mean, round_to)
-            self.prediction_inputs.append([x1])
+            x1 = random.random()*10-5
+            x2 = random.random()*10-5
+            self.prediction_inputs.append([x1, x2])
+            if x1**2 + x2**2 <= 25:
+                self.prediction_outputs.append([0,1])
+            else:
+                self.prediction_outputs.append([1,0])
     def get_prediction_inputs(self):
         return(self.prediction_inputs)
+    def get_prediction_outputs(self):
+        return(self.prediction_outputs)
 
 
 #--------------------------------------------------------------------------------------------------------------------------------
-training_data = Training_data(1000,10,10,5,5) #amount to gen| data domain| data range| data_mean| round to
-prediction_data = Prediction_data(50,10,5,5) #amount to gen| data domain| data_mean| round to
+training_data = Training_data(1000) #amount to gen
+prediction_data = Prediction_data(50) #amount to gen
 #--------------------------------------------------------------------------------------------------------------------------------
 
-neural = NN(1, 2, 20, 1, "ReLU", "None")
-neural.train(1000, 0.001, training_data.get_training_inputs(), training_data.get_training_outputs(), 50)
+neural = NN(2, 3, 30, 2, "Leaky_ReLU", "Softmax")
+neural.train(300, 0.001, training_data.get_training_inputs(), training_data.get_training_outputs(), 50)
 neural.predict(prediction_data.get_prediction_inputs())
 
-print(neural.prediction_outputs)
+#print(neural.prediction_outputs)
+
+#use compare() for classification tasks
+def compare(prediction, actual):
+    total_correct = 0
+    for i in range(len(prediction)):
+        for j in range(len(prediction[0])):
+            prediction[i][j] = round(prediction[i][j])
+    for i in range(len(prediction)):
+        if prediction[i] == actual[i]:
+            total_correct += 1
+    print(f"Total accuracy: {round((total_correct/len(prediction))*100,5)} %")
+
+compare(neural.prediction_outputs,prediction_data.get_prediction_outputs())
