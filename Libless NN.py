@@ -8,10 +8,8 @@ class Layer:
     def __init__(self, previous_height, height, activation_function_type):
         self.biases = [(1*(random.random())*2-1) for n in range(height)]
         self.weights = [[(1*(random.random())*2-1) for n in range(previous_height)] for m in range(height)]
-       
         self.delta_biases = [0] * height
         self.delta_weights = [[0] * previous_height for _ in range(height)]
-
         self.activation_function_type = activation_function_type
     
     def forward(self, previous_layer_outputs):
@@ -62,26 +60,18 @@ class Layer:
             for i in range(len(inputted_loss_array)):
                 if self.outputs[i] < 0:
                     self.passed_on_loss_array[i] *= 0
-                else:
-                    self.passed_on_loss_array[i] *= 1
         elif self.activation_function_type == "Leaky_ReLU":
             for i in range(len(inputted_loss_array)):
                 if self.outputs[i] < 0:
                     self.passed_on_loss_array[i] *= 0.1
-                else:
-                    self.passed_on_loss_array[i] *= 1
         elif self.activation_function_type == "Softmax":
             for i in range(len(self.passed_on_loss_array)):
                 self.passed_on_loss_array[i] *= (1 - self.outputs[i]) * self.outputs[i]
-                #self.passed_on_loss_array[i] *= E**self.passed_on_loss_array[i]
-
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
-
         for i in range(len(self.weights)):
             for j in range(len(self.weights[0])):
                 self.delta_weights[i][j] += self.passed_on_loss_array[i]*self.previous_layer_outputs[j]
-
         self.loss_to_pass = [0] * len(self.weights[0])
         for i in range(len(self.loss_to_pass)):
             for j in range(len(self.weights)):
@@ -95,7 +85,6 @@ class Layer:
         for i in range(len(self.biases)):
             self.delta_biases[i] /= batch_size
             self.biases[i] -= self.delta_biases[i]*learning_rate
-
         self.delta_biases = [0] * len(self.biases)
         self.delta_weights = [[0] * len(self.weights[0]) for _ in range(len(self.weights))]
 
@@ -121,17 +110,16 @@ class NN:
             random.shuffle(combined_data)
             # Split the shuffled data back into training_data and training_answers
             training_data, training_answers = zip(*combined_data)
-
             for j in range(len(training_data)):
                 current_batch += 1
-                #start layer forward and activ
+                #start layer forward and activation
                 self.layers[0].forward(training_data[j])
                 self.layers[0].activation_function()
-                #middle layer forward and activ
+                #middle layer forward and activation
                 for k in range(len(self.layers)-2):
                     self.layers[k+1].forward(self.layers[k].post_activation_outputs)
                     self.layers[k+1].activation_function()
-                #last layer forward and activ
+                #last layer forward and activation
                 self.layers[-1].forward(self.layers[-2].post_activation_outputs)
                 self.layers[-1].activation_function()
                 #now for loss
@@ -143,18 +131,15 @@ class NN:
                 self.layers[-1].back_prop(self.layers[-1].d_loss)
                 for l in range(len(self.layers)-1):
                     self.layers[-l-2].back_prop(self.layers[-l-1].loss_to_pass)
-                
                 if current_batch == batch_size:
                     current_batch = 0
                     print(f"{round(batch_loss/batch_size,3)}")
                     for i in range(len(self.layers)):
                         self.layers[i].update_w_and_b(batch_size, learning_rate)
                     batch_loss = 0
-            
             if current_batch != 0:
                 for i in range(len(self.layers)):
                     self.layers[i].update_w_and_b(batch_size, learning_rate)
-            
             current_epoch += 1
             print(f"Epochs completed: {current_epoch}/{epochs}\nAverage epoch loss: {current_epoch_loss/len(training_data)}")
 
@@ -163,11 +148,11 @@ class NN:
         for i in range(len(data_to_predict)):
             self.layers[0].forward(data_to_predict[i])
             self.layers[0].activation_function()
-            #middle layer forward and activ
+            #middle layer forward and activation
             for k in range(len(self.layers)-2):
                 self.layers[k+1].forward(self.layers[k].post_activation_outputs)
                 self.layers[k+1].activation_function()
-            #last layer forward and activ
+            #last layer forward and activation
             self.layers[-1].forward(self.layers[-2].post_activation_outputs)
             self.layers[-1].activation_function()
             print(f"Predicting")
@@ -211,8 +196,8 @@ class Prediction_data:
 
 
 #--------------------------------------------------------------------------------------------------------------------------------
-training_data = Training_data(1000) #amount to gen
-prediction_data = Prediction_data(50) #amount to gen
+training_data = Training_data(1000)
+prediction_data = Prediction_data(50)
 #--------------------------------------------------------------------------------------------------------------------------------
 
 neural = NN(2, 3, 30, 2, "Leaky_ReLU", "Softmax")
