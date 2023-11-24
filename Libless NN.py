@@ -54,12 +54,19 @@ class Layer:
                 self.mean_loss += loss[i]
         
     def back_prop(self, inputted_loss_array):
-        if self.activation_function_type == "None":
-            self.passed_on_loss_array = inputted_loss_array
-        elif self.activation_function_type == "ReLU":
-            self.passed_on_loss_array = [n * 0 if n < 0 else 1 for n in inputted_loss_array]
+        self.passed_on_loss_array = inputted_loss_array
+        if self.activation_function_type == "ReLU":
+            for i in range(len(inputted_loss_array)):
+                if self.outputs[i] < 0:
+                    self.passed_on_loss_array[i] *= 0
+                else:
+                    self.passed_on_loss_array[i] *= 1
         elif self.activation_function_type == "Leaky_ReLU":
-            self.passed_on_loss_array = [n * 0.1 if n < 0 else 1 for n in inputted_loss_array]
+            for i in range(len(inputted_loss_array)):
+                if self.outputs[i] < 0:
+                    self.passed_on_loss_array[i] *= 0.1
+                else:
+                    self.passed_on_loss_array[i] *= 1
         elif self.activation_function_type == "Softmax":
             for i in range(len(self.passed_on_loss_array)):
                 #self.passed_on_loss_array[i] *= (1 - self.outputs[i]) * self.outputs[i]
@@ -172,6 +179,6 @@ class NN:
         self.train(1, 0, testing_data, testing_answers, True, 1000000000000000)
 
 
-neural = NN(1, 3, 20, 1, "ReLU", "None")
-neural.train(1000, 0.1, classification_data, classification_answers, False, 50)
+neural = NN(1, 2, 20, 1, "ReLU", "None")
+neural.train(1000, 0.01, classification_data, classification_answers, False, 50)
 neural.test(testing_data, testing_answers)
