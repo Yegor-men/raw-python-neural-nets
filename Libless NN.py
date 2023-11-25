@@ -7,7 +7,7 @@ import csv
 #--------------------------------------------------------------------------------------------------------------------------------
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
-        self.biases = [0.1 * (random.random() * 2 - 1) for n in range(height)]
+        self.biases = [1 * (random.random() * 2 - 1) for n in range(height)]
         self.weights = [[(1 * (random.random()) * 2 - 1) * math.sqrt(2 / previous_height) for n in range(previous_height)] for m in range(height)]
         self.delta_biases = [0] * height
         self.delta_weights = [[0] * previous_height for _ in range(height)]
@@ -284,13 +284,13 @@ def train_and_test(input_size, inner_layers_amount, neurons_per_layer, output_si
         classification_compare(neural.prediction_outputs, predict_answers)
 
 train_and_test(input_size = 4, 
-               inner_layers_amount = 2, 
-               neurons_per_layer = 16, 
+               inner_layers_amount = 3, 
+               neurons_per_layer = 50, 
                output_size = 3, 
                inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 1000, 
-               training_step = 0.01, 
+               epochs = 1000,
+               training_step = 0.01,
                training_questions = iris_data.get_t_q(), 
                training_answers = iris_data.get_t_a(), 
                batch_size = 20, 
