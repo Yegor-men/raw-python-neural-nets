@@ -34,9 +34,6 @@ class Layer:
             sum_exp_outputs = sum(exp_outputs)
             self.post_activation_outputs = [n / sum_exp_outputs for n in exp_outputs]
 
-
-
-
     def loss(self, prediced_list, expected_list, type):
         self.loss_type = type
         if self.loss_type == "mse":
@@ -48,7 +45,12 @@ class Layer:
         elif self.loss_type == "log":
             self.mean_loss = 0
             self.correct_answer_index = expected_list.index(max(expected_list))
-            self.d_loss = [-expected_list[i] * math.log(prediced_list[i] + 1e-10) for i in range(len(prediced_list))]
+            self.d_loss = self.post_activation_outputs
+            for i in range(len(self.post_activation_outputs)):
+                if i != self.correct_answer_index:
+                    self.d_loss[i] = -math.log(1-self.post_activation_outputs[i] + 1e-15)
+                else:
+                    self.d_loss[i] = -math.log(self.post_activation_outputs[i] + 1e-15)
             for i in range(len(self.d_loss)):
                 self.mean_loss += self.d_loss[i]
             self.mean_loss /= len(self.d_loss)
@@ -66,15 +68,6 @@ class Layer:
         elif self.activation_function_type == "Softmax":
             for i in range(len(self.passed_on_loss_array)):
                 self.passed_on_loss_array[i] *= (1 - self.outputs[i]) * self.outputs[i]
-                # self.passed_on_loss_array[i] = E** self.passed_on_loss_array[i]
-                # self.passed_on_loss_array = self.d_loss
-        
-        # elif self.activation_function_type == "Softmax":
-        #     for i in range(len(self.passed_on_loss_array)):
-        #         if i == self.correct_answer_index:
-        #             self.passed_on_loss_array[i] *= (self.outputs[i] - 1)
-        #         else:
-        #             self.passed_on_loss_array[i] *= self.outputs[i]
 
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
