@@ -7,8 +7,8 @@ import csv
 #--------------------------------------------------------------------------------------------------------------------------------
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
-        self.biases = [(1*(random.random())*2-1) for n in range(height)]
-        self.weights = [[(1*(random.random())*2-1) for n in range(previous_height)] for m in range(height)]
+        self.biases = [0.1 * (random.random() * 2 - 1) for n in range(height)]
+        self.weights = [[(1 * (random.random()) * 2 - 1) * math.sqrt(2 / previous_height) for n in range(previous_height)] for m in range(height)]
         self.delta_biases = [0] * height
         self.delta_weights = [[0] * previous_height for _ in range(height)]
         self.activation_function_type = activation_function_type
@@ -24,20 +24,17 @@ class Layer:
     def activation_function(self):
         if self.activation_function_type == "None":
             self.post_activation_outputs = self.outputs
-        if self.activation_function_type == "ReLU":
+        elif self.activation_function_type == "ReLU":
             self.post_activation_outputs = [max(0, n) for n in self.outputs]
-        if self.activation_function_type == "Leaky_ReLU":
+        elif self.activation_function_type == "Leaky_ReLU":
             self.post_activation_outputs = [0.1*n if n<0 else n for n in self.outputs]
-        if self.activation_function_type == "Softmax":
-            self.post_activation_outputs = self.outputs
-            maximum_output = max(self.post_activation_outputs)
-            sum = 0
-            for i in range(len(self.post_activation_outputs)):
-                self.post_activation_outputs[i] -= maximum_output
-                self.post_activation_outputs[i] = E**self.post_activation_outputs[i]
-                sum += self.post_activation_outputs[i]
-            for i in range(len(self.post_activation_outputs)):
-                self.post_activation_outputs[i] /= sum
+        elif self.activation_function_type == "Softmax":
+            maximum_output = max(self.outputs)
+            exp_outputs = [E**(n - maximum_output) for n in self.outputs]
+            sum_exp_outputs = sum(exp_outputs)
+            self.post_activation_outputs = [n / sum_exp_outputs for n in exp_outputs]
+
+
 
 
     def loss(self, prediced_list, expected_list, type):
@@ -50,10 +47,11 @@ class Layer:
             self.d_loss = [(prediced_list[i] - expected_list[i]) for i in range(len(prediced_list))]
         elif self.loss_type == "log":
             self.mean_loss = 0
-            for i in range(len(prediced_list)):
-                self.mean_loss += 0.5*((prediced_list[i] - expected_list[i])**2)
-            self.mean_loss /= len(prediced_list)
-            self.d_loss = [(prediced_list[i] - expected_list[i]) for i in range(len(prediced_list))]
+            self.correct_answer_index = expected_list.index(max(expected_list))
+            self.d_loss = [-expected_list[i] * math.log(prediced_list[i] + 1e-10) for i in range(len(prediced_list))]
+            for i in range(len(self.d_loss)):
+                self.mean_loss += self.d_loss[i]
+            self.mean_loss /= len(self.d_loss)
         
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = inputted_loss_array
@@ -68,6 +66,16 @@ class Layer:
         elif self.activation_function_type == "Softmax":
             for i in range(len(self.passed_on_loss_array)):
                 self.passed_on_loss_array[i] *= (1 - self.outputs[i]) * self.outputs[i]
+                # self.passed_on_loss_array[i] = E** self.passed_on_loss_array[i]
+                # self.passed_on_loss_array = self.d_loss
+        
+        # elif self.activation_function_type == "Softmax":
+        #     for i in range(len(self.passed_on_loss_array)):
+        #         if i == self.correct_answer_index:
+        #             self.passed_on_loss_array[i] *= (self.outputs[i] - 1)
+        #         else:
+        #             self.passed_on_loss_array[i] *= self.outputs[i]
+
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
         for i in range(len(self.weights)):
@@ -259,6 +267,7 @@ iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 129)
 #--------------------------------------------------------------------------------------------------------------------------------
 def classification_compare(prediction, actual):
         total_correct = 0
+        print(prediction)
         for i in range(len(prediction)):
             index_of_max = prediction[i].index(max(prediction[i]))
             for j in range(len(prediction[0])):
@@ -282,12 +291,13 @@ def train_and_test(input_size, inner_layers_amount, neurons_per_layer, output_si
         classification_compare(neural.prediction_outputs, predict_answers)
 
 train_and_test(input_size = 4, 
-               inner_layers_amount = 3, 
-               neurons_per_layer = 30, 
+               inner_layers_amount = 2, 
+               neurons_per_layer = 16, 
                output_size = 3, 
                inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs=300, training_step = 0.01, 
+               epochs = 1000, 
+               training_step = 0.01, 
                training_questions = iris_data.get_t_q(), 
                training_answers = iris_data.get_t_a(), 
                batch_size = 20, 
