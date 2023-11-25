@@ -7,7 +7,7 @@ import csv
 #--------------------------------------------------------------------------------------------------------------------------------
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
-        self.biases = [1 * (random.random() * 2 - 1) for n in range(height)]
+        self.biases = [0.1 * (random.random() * 2 - 1) for n in range(height)]
         self.weights = [[(1 * (random.random()) * 2 - 1) * math.sqrt(2 / previous_height) for n in range(previous_height)] for m in range(height)]
         self.delta_biases = [0] * height
         self.delta_weights = [[0] * previous_height for _ in range(height)]
@@ -29,10 +29,10 @@ class Layer:
         elif self.activation_function_type == "Leaky_ReLU":
             self.post_activation_outputs = [0.1*n if n<0 else n for n in self.outputs]
         elif self.activation_function_type == "Softmax":
-            maximum_output = max(self.outputs)
-            exp_outputs = [E**(n - maximum_output) for n in self.outputs]
-            sum_exp_outputs = sum(exp_outputs)
-            self.post_activation_outputs = [n / sum_exp_outputs for n in exp_outputs]
+            self.maximum_output = max(self.outputs)
+            exp_outputs = [E**(n-self.maximum_output) for n in self.outputs]
+            self.sum_exp_outputs = sum(exp_outputs)
+            self.post_activation_outputs = [n / self.sum_exp_outputs for n in exp_outputs]
 
     def loss(self, prediced_list, expected_list, type):
         self.loss_type = type
@@ -45,14 +45,13 @@ class Layer:
         elif self.loss_type == "log":
             self.mean_loss = 0
             self.correct_answer_index = expected_list.index(max(expected_list))
-            self.d_loss = self.post_activation_outputs
+            self.intermediate_d_loss = self.post_activation_outputs
             for i in range(len(self.post_activation_outputs)):
-                if i != self.correct_answer_index:
-                    self.d_loss[i] = -math.log(1-self.post_activation_outputs[i] + 1e-15)
-                else:
-                    self.d_loss[i] = -math.log(self.post_activation_outputs[i] + 1e-15)
+                self.intermediate_d_loss[i] = -expected_list[i]*math.log(self.post_activation_outputs[i] + 1e-15)
+            self.d_loss = self.intermediate_d_loss
             for i in range(len(self.d_loss)):
                 self.mean_loss += self.d_loss[i]
+                self.d_loss[i] = -(self.sum_exp_outputs)*(1-E**(self.outputs[i]-self.maximum_output))
             self.mean_loss /= len(self.d_loss)
         
     def back_prop(self, inputted_loss_array):
@@ -67,7 +66,7 @@ class Layer:
                     self.passed_on_loss_array[i] *= 0.1
         elif self.activation_function_type == "Softmax":
             for i in range(len(self.passed_on_loss_array)):
-                self.passed_on_loss_array[i] *= (1 - self.outputs[i]) * self.outputs[i]
+                self.passed_on_loss_array[i] *= 1
 
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
@@ -287,10 +286,10 @@ train_and_test(input_size = 4,
                inner_layers_amount = 3, 
                neurons_per_layer = 50, 
                output_size = 3, 
-               inner_neuron_activation = "ReLU", 
+               inner_neuron_activation = "Leaky_ReLU", 
                last_layer_activation = "Softmax", 
                epochs = 1000,
-               training_step = 0.01,
+               training_step = 0.001,
                training_questions = iris_data.get_t_q(), 
                training_answers = iris_data.get_t_a(), 
                batch_size = 20, 
