@@ -30,9 +30,9 @@ class Layer:
             self.post_activation_outputs = [0.1*n if n<0 else n for n in self.outputs]
         elif self.activation_function_type == "Softmax":
             self.maximum_output = max(self.outputs)
-            exp_outputs = [E**(n-self.maximum_output) for n in self.outputs]
-            self.sum_exp_outputs = sum(exp_outputs)
-            self.post_activation_outputs = [n / self.sum_exp_outputs for n in exp_outputs]
+            self.exp_outputs = [E**(n-self.maximum_output) for n in self.outputs]
+            self.sum_exp_outputs = sum(self.exp_outputs)
+            self.post_activation_outputs = [n / self.sum_exp_outputs for n in self.exp_outputs]
 
     def loss(self, prediced_list, expected_list, type):
         self.loss_type = type
@@ -51,8 +51,7 @@ class Layer:
             self.d_loss = self.intermediate_d_loss
             for i in range(len(self.d_loss)):
                 self.mean_loss += self.d_loss[i]
-                self.d_loss[i] = -(self.sum_exp_outputs)*(1-E**(self.outputs[i]-self.maximum_output))
-            self.mean_loss /= len(self.d_loss)
+                self.d_loss[i] = -(1-self.exp_outputs[i])*self.sum_exp_outputs
         
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = inputted_loss_array
@@ -64,9 +63,9 @@ class Layer:
             for i in range(len(inputted_loss_array)):
                 if self.outputs[i] < 0:
                     self.passed_on_loss_array[i] *= 0.1
-        elif self.activation_function_type == "Softmax":
-            for i in range(len(self.passed_on_loss_array)):
-                self.passed_on_loss_array[i] *= 1
+        # elif self.activation_function_type == "Softmax":
+        #     for i in range(len(self.passed_on_loss_array)):
+        #         self.passed_on_loss_array[i] *= 1
 
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
@@ -283,13 +282,13 @@ def train_and_test(input_size, inner_layers_amount, neurons_per_layer, output_si
         classification_compare(neural.prediction_outputs, predict_answers)
 
 train_and_test(input_size = 4, 
-               inner_layers_amount = 3, 
-               neurons_per_layer = 50, 
+               inner_layers_amount = 2, 
+               neurons_per_layer = 20, 
                output_size = 3, 
-               inner_neuron_activation = "Leaky_ReLU", 
+               inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 1000,
-               training_step = 0.001,
+               epochs = 100,
+               training_step = 0.01,
                training_questions = iris_data.get_t_q(), 
                training_answers = iris_data.get_t_a(), 
                batch_size = 20, 
