@@ -47,11 +47,11 @@ class Layer:
             self.correct_answer_index = expected_list.index(max(expected_list))
             self.intermediate_d_loss = self.post_activation_outputs
             for i in range(len(self.post_activation_outputs)):
-                self.intermediate_d_loss[i] = -(expected_list[i]*math.log(self.post_activation_outputs[i])+(1-expected_list[i])*math.log(1-self.post_activation_outputs[i]))
+                self.intermediate_d_loss[i] = -(expected_list[i]*math.log(self.post_activation_outputs[i] + 1e-15)+(1-expected_list[i])*math.log(1-self.post_activation_outputs[i] + 1e-15))
             self.d_loss = self.intermediate_d_loss
             for i in range(len(self.d_loss)):
                 self.mean_loss += self.d_loss[i]
-                self.d_loss[i] = -((expected_list[i]/self.post_activation_outputs[i])-((1-expected_list[i])/(1-self.post_activation_outputs[i])))
+                self.d_loss[i] = -((expected_list[i]/self.post_activation_outputs[i] + 1e-15)-((1-expected_list[i])/(1-self.post_activation_outputs[i] + 1e-15)))
 
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = inputted_loss_array
@@ -63,6 +63,9 @@ class Layer:
             for i in range(len(inputted_loss_array)):
                 if self.outputs[i] < 0:
                     self.passed_on_loss_array[i] *= 0.1
+        elif self.activation_function_type == "Softmax":
+            for i in range(len(inputted_loss_array)):
+                self.passed_on_loss_array[i] *= -self.post_activation_outputs[i]*(1-self.post_activation_outputs[i])
 
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
@@ -282,7 +285,7 @@ train_and_test(input_size = 4,
                inner_layers_amount = 2, 
                neurons_per_layer = 50, 
                output_size = 3, 
-               inner_neuron_activation = "ReLU", 
+               inner_neuron_activation = "Leaky_ReLU", 
                last_layer_activation = "Softmax", 
                epochs = 1000,
                training_step = 0.1,
