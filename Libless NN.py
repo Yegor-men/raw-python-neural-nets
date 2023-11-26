@@ -143,7 +143,7 @@ class NN:
                     self.layers[-l-2].back_prop(self.layers[-l-1].loss_to_pass)
                 if current_batch == batch_size:
                     current_batch = 0
-                    print(f"{round(batch_loss/batch_size,3)}")
+                    # print(f"{round(batch_loss/batch_size,3)}")
                     for i in range(len(self.layers)):
                         self.layers[i].update_w_and_b(batch_size, learning_rate)
                     batch_loss = 0
@@ -151,7 +151,7 @@ class NN:
                 for i in range(len(self.layers)):
                     self.layers[i].update_w_and_b(batch_size, learning_rate)
             current_epoch += 1
-            print(f"Epochs completed: {current_epoch}/{epochs}\nAverage epoch loss: {current_epoch_loss/len(training_data)}")
+            print(f"Epochs completed: {current_epoch}/{epochs} |Average epoch loss: {current_epoch_loss/len(training_data)}")
 
     def predict(self, data_to_predict):
         self.prediction_outputs = []
@@ -297,11 +297,11 @@ train_and_test(input_size = 4,
                output_size = 3, 
                inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 100,
-               training_step = 0.0001,
+               epochs = 1000,
+               training_step = 0.001,
                training_questions = iris_data.get_t_q(), 
                training_answers = iris_data.get_t_a(), 
-               batch_size = 50, 
+               batch_size = 10, 
                predict_questions = iris_data.get_pred_q(), 
                predict_answers = iris_data.get_pred_a(), 
                is_classification = True)
