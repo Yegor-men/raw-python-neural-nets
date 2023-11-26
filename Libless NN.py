@@ -75,7 +75,7 @@ class Layer:
                     self.passed_on_loss_array[i] *= 0.1
         elif self.activation_function_type == "Softmax":
             for i in range(len(self.passed_on_loss_array)):
-                self.passed_on_loss_array[i] *= (self.exp_outputs[i])*(1-self.exp_outputs[i])
+                self.passed_on_loss_array[i] *= (self.post_activation_outputs[i])*(1-self.post_activation_outputs[i])
 
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
@@ -297,8 +297,8 @@ train_and_test(input_size = 4,
                output_size = 3, 
                inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 100000,
-               training_step = 0.00001,
+               epochs = 100,
+               training_step = 0.0001,
                training_questions = iris_data.get_t_q(), 
                training_answers = iris_data.get_t_a(), 
                batch_size = 50, 
