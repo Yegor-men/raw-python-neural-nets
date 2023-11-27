@@ -7,21 +7,19 @@ import csv
 #--------------------------------------------------------------------------------------------------------------------------------
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
-        self.biases = [0.1 * (random.random() * 2 - 1) for n in range(height)]
-        self.weights = [[(1 * (random.random()) * 2 - 1) * math.sqrt(2 / previous_height) for n in range(previous_height)] for m in range(height)]
-        # self.weights = [[random.gauss(0, math.sqrt(2 / previous_height)) for n in range(previous_height)] for m in range(height)]
+        self.biases = [1 * (random.random() * 2 - 1) for n in range(height)]
+        self.weights = [[(1 * (random.random()) * 2 - 1) for n in range(previous_height)] for m in range(height)]
         self.delta_biases = [0] * height
         self.delta_weights = [[0] * previous_height for _ in range(height)]
         self.activation_function_type = activation_function_type
     
     def forward(self, previous_layer_outputs):
         self.previous_layer_outputs = previous_layer_outputs
-        self.outputs = [sum(previous_layer_outputs[k] * self.weights[m][k] for k in range(len(previous_layer_outputs))) + self.biases[m] for m in range(len(self.weights))]
-        # self.outputs = [0]*len(self.biases)
-        # for j in range(len(self.biases)):
-        #     for k in range(len(self.weights[0])):
-        #         self.outputs[j] += ((previous_layer_outputs[k]) * (self.weights[j][k]))
-        #     self.outputs[j] += self.biases[j]
+        self.outputs = [0]*len(self.biases)
+        for j in range(len(self.biases)):
+            for k in range(len(self.weights[0])):
+                self.outputs[j] += ((previous_layer_outputs[k]) * (self.weights[j][k]))
+            self.outputs[j] += self.biases[j]
 
     def activation_function(self):
         if self.activation_function_type == "None":
@@ -49,12 +47,12 @@ class Layer:
             self.correct_answer_index = expected_list.index(max(expected_list))
             self.intermediate_d_loss = self.post_activation_outputs
             for i in range(len(self.post_activation_outputs)):
-                self.intermediate_d_loss[i] = -(expected_list[i]*math.log(self.post_activation_outputs[i] + 1e-15)+(1-expected_list[i])*math.log(1-self.post_activation_outputs[i] + 1e-15))
+                self.intermediate_d_loss[i] = -expected_list[i]*math.log(self.post_activation_outputs[i] + 1e-15)
             self.d_loss = self.intermediate_d_loss
             for i in range(len(self.d_loss)):
                 self.mean_loss += self.d_loss[i]
                 # self.d_loss[i] = -((expected_list[i]/self.post_activation_outputs[i] + 1e-15)-((1-expected_list[i])/(1-self.post_activation_outputs[i] + 1e-15)))
-                self.d_loss[i] = (self.post_activation_outputs[i]-expected_list[i])/(self.post_activation_outputs[i]*(1-self.post_activation_outputs[i]) + 1e-15)
+                self.d_loss[i] = -(self.post_activation_outputs[i] - expected_list[i])
 
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = inputted_loss_array
@@ -66,9 +64,9 @@ class Layer:
             for i in range(len(inputted_loss_array)):
                 if self.outputs[i] < 0:
                     self.passed_on_loss_array[i] *= 0.1
-        elif self.activation_function_type == "Softmax":
-            for i in range(len(inputted_loss_array)):
-                self.passed_on_loss_array[i] *= -self.post_activation_outputs[i]*(1-self.post_activation_outputs[i])
+        # elif self.activation_function_type == "Softmax":
+        #     for i in range(len(inputted_loss_array)):
+        #         self.passed_on_loss_array[i] *= -self.post_activation_outputs[i]*(1-self.post_activation_outputs[i])
 
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
@@ -105,9 +103,9 @@ class NN:
     def train(self, epochs, learning_rate, training_data, training_answers, batch_size):
         current_epoch = 0
         current_batch = 0
-        batch_loss = 0
         for i in range(epochs):
             current_epoch_loss = 0
+            batch_loss = 0
             combined_data = list(zip(training_data, training_answers))
             # Shuffle the combined data
             random.shuffle(combined_data)
@@ -137,12 +135,12 @@ class NN:
                 if current_batch == batch_size:
                     current_batch = 0
                     # print(f"{round(batch_loss/batch_size,3)}")
-                    for i in range(len(self.layers)):
-                        self.layers[i].update_w_and_b(batch_size, learning_rate)
+                    for g in range(len(self.layers)):
+                        self.layers[g].update_w_and_b(batch_size, learning_rate)
                     batch_loss = 0
             if current_batch != 0:
-                for i in range(len(self.layers)):
-                    self.layers[i].update_w_and_b(batch_size, learning_rate)
+                for k in range(len(self.layers)):
+                    self.layers[k].update_w_and_b(batch_size, learning_rate)
             current_epoch += 1
             print(f"Epochs completed: {current_epoch}/{epochs} |Average epoch loss: {current_epoch_loss/len(training_data)}")
 
@@ -152,7 +150,7 @@ class NN:
             self.layers[0].forward(data_to_predict[i])
             self.layers[0].activation_function()
             #middle layer forward and activation
-            for k in range(len(self.layers)-2):
+            for k in range(len(self.layers)-2): 
                 self.layers[k+1].forward(self.layers[k].post_activation_outputs)
                 self.layers[k+1].activation_function()
             #last layer forward and activation
@@ -179,16 +177,12 @@ class Training_data:
         self.training_inputs = []
         self.training_outputs = []
         for i in range(amount_to_gen):
-            x1 = random.random()*20-10
-            x2 = random.random()*20-10
-            self.training_inputs.append([x1, x2])
-            if x1**2 + x2**2 <= 25:
-                self.training_outputs.append([0,1])
-            else:
-                self.training_outputs.append([1,0])
-    def get_training_inputs(self):
+            x1 = random.random()*20
+            self.training_inputs.append([x1])
+            self.training_outputs.append([1,0,0] if x1<5 else [0,1,0] if 5<=x1<13 else [0,0,1])
+    def get_t_q(self):
         return(self.training_inputs)
-    def get_training_outputs(self):
+    def get_t_a(self):
         return(self.training_outputs)
         
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -197,21 +191,17 @@ class Prediction_data:
         self.prediction_inputs = []
         self.prediction_outputs = []
         for i in range(amount_to_gen):
-            x1 = random.random()*20-10
-            x2 = random.random()*20-10
-            self.prediction_inputs.append([x1, x2])
-            if x1**2 + x2**2 <= 25:
-                self.prediction_outputs.append([0,1])
-            else:
-                self.prediction_outputs.append([1,0])
-    def get_prediction_inputs(self):
+            x1 = random.random()*20
+            self.prediction_inputs.append([x1])
+            self.prediction_outputs.append([1,0,0] if x1<5 else [0,1,0] if 5<=x1<13 else [0,0,1])
+    def get_p_q(self):
         return(self.prediction_inputs)
-    def get_prediction_outputs(self):
+    def get_p_a(self):
         return(self.prediction_outputs)
 
 #--------------------------------------------------------------------------------------------------------------------------------
-#training_data = Training_data(1000)
-#prediction_data = Prediction_data(50)
+training_data = Training_data(1000)
+prediction_data = Prediction_data(100)
 #--------------------------------------------------------------------------------------------------------------------------------
 def one_hot_encoding(data, data_types):
     output = []
@@ -257,15 +247,14 @@ class QuestionsAndAnswers():
         self.training_data_answers = answers[:amount]
         self.prediction_data_questions = questions[amount:]
         self.prediction_data_answers = answers[amount:]
-
-
+    
     def get_t_q(self):
         return self.training_data_questions
     def get_t_a(self):
         return self.training_data_answers
-    def get_pred_q(self):
+    def get_p_q(self):
         return self.prediction_data_questions
-    def get_pred_a(self):
+    def get_p_a(self):
         return self.prediction_data_answers
 
 iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 129)
@@ -295,20 +284,20 @@ def train_and_test(input_size, inner_layers_amount, neurons_per_layer, output_si
         print(neural.prediction_outputs)
     if is_classification == True:
         classification_compare(neural.prediction_outputs, predict_answers)
-    print(neural.export_biases())
-    print(neural.export_weights())
+    # print(neural.export_biases())
+    # print(neural.export_weights())
 
-train_and_test(input_size = 4, 
-               inner_layers_amount = 3, 
-               neurons_per_layer = 16, 
+train_and_test(input_size = 1, 
+               inner_layers_amount = 2, 
+               neurons_per_layer = 10, 
                output_size = 3, 
-               inner_neuron_activation = "ReLU", 
+               inner_neuron_activation = "Leaky_ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 100000,
-               training_step = 0.01,
-               training_questions = iris_data.get_t_q(),
-               training_answers = iris_data.get_t_a(),
-               batch_size = 32,
-               predict_questions = iris_data.get_pred_q(),
-               predict_answers = iris_data.get_pred_a(),
+               epochs = 35,
+               training_step = 0.001,
+               training_questions = training_data.get_t_q(),
+               training_answers = training_data.get_t_a(),
+               batch_size = 1000,
+               predict_questions = prediction_data.get_p_q(),
+               predict_answers = prediction_data.get_p_a(),
                is_classification = True)
