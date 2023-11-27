@@ -1,7 +1,7 @@
 import math
 import random
 E = math.e
-random.seed(1)
+random.seed(0)
 import csv
 
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -165,36 +165,36 @@ class NN:
         return(all_biases)
 
 #--------------------------------------------------------------------------------------------------------------------------------
-class Training_data:
-    def __init__(self, amount_to_gen):
-        self.training_inputs = []
-        self.training_outputs = []
-        for i in range(amount_to_gen):
-            x1 = random.random()*20
-            self.training_inputs.append([x1])
-            self.training_outputs.append([1,0,0] if x1<5 else [0,1,0] if 5<=x1<13 else [0,0,1])
-    def get_t_q(self):
-        return(self.training_inputs)
-    def get_t_a(self):
-        return(self.training_outputs)
+# class Training_data:
+#     def __init__(self, amount_to_gen):
+#         self.training_inputs = []
+#         self.training_outputs = []
+#         for i in range(amount_to_gen):
+#             x1 = random.random()*20
+#             self.training_inputs.append([x1])
+#             self.training_outputs.append([1,0,0] if x1<5 else [0,1,0] if 5<=x1<13 else [0,0,1])
+#     def get_t_q(self):
+#         return(self.training_inputs)
+#     def get_t_a(self):
+#         return(self.training_outputs)
         
-#--------------------------------------------------------------------------------------------------------------------------------
-class Prediction_data:
-    def __init__(self, amount_to_gen):
-        self.prediction_inputs = []
-        self.prediction_outputs = []
-        for i in range(amount_to_gen):
-            x1 = random.random()*20
-            self.prediction_inputs.append([x1])
-            self.prediction_outputs.append([1,0,0] if x1<5 else [0,1,0] if 5<=x1<13 else [0,0,1])
-    def get_p_q(self):
-        return(self.prediction_inputs)
-    def get_p_a(self):
-        return(self.prediction_outputs)
+# #--------------------------------------------------------------------------------------------------------------------------------
+# class Prediction_data:
+#     def __init__(self, amount_to_gen):
+#         self.prediction_inputs = []
+#         self.prediction_outputs = []
+#         for i in range(amount_to_gen):
+#             x1 = random.random()*20
+#             self.prediction_inputs.append([x1])
+#             self.prediction_outputs.append([1,0,0] if x1<5 else [0,1,0] if 5<=x1<13 else [0,0,1])
+#     def get_p_q(self):
+#         return(self.prediction_inputs)
+#     def get_p_a(self):
+#         return(self.prediction_outputs)
 
-#--------------------------------------------------------------------------------------------------------------------------------
-training_data = Training_data(1000)
-prediction_data = Prediction_data(100)
+# #--------------------------------------------------------------------------------------------------------------------------------
+# training_data = Training_data(1000)
+# prediction_data = Prediction_data(100)
 #--------------------------------------------------------------------------------------------------------------------------------
 def one_hot_encoding(data, data_types):
     output = []
@@ -250,7 +250,7 @@ class QuestionsAndAnswers():
     def get_p_a(self):
         return self.prediction_data_answers
 
-iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 129)
+iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 99)
 
 #--------------------------------------------------------------------------------------------------------------------------------
 def classification_compare(prediction, actual):
@@ -280,17 +280,17 @@ def train_and_test(input_size, inner_layers_amount, neurons_per_layer, output_si
     # print(neural.export_biases())
     # print(neural.export_weights())
 
-train_and_test(input_size = 1, 
-               inner_layers_amount = 2, 
+train_and_test(input_size = 4, 
+               inner_layers_amount = 10, 
                neurons_per_layer = 10, 
                output_size = 3, 
-               inner_neuron_activation = "Leaky_ReLU", 
+               inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 350,
-               training_step = 0.001,
-               training_questions = training_data.get_t_q(),
-               training_answers = training_data.get_t_a(),
+               epochs = 1000,
+               training_step = 0.01,
+               training_questions = iris_data.get_t_q(),
+               training_answers = iris_data.get_t_a(),
                batch_size = 1000,
-               predict_questions = prediction_data.get_p_q(),
-               predict_answers = prediction_data.get_p_a(),
+               predict_questions = iris_data.get_p_q(),
+               predict_answers = iris_data.get_p_a(),
                is_classification = True)
