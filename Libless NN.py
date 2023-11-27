@@ -36,22 +36,18 @@ class Layer:
 
     def loss(self, prediced_list, expected_list, type):
         self.loss_type = type
+        self.mean_loss = 0
         if self.loss_type == "mse":
-            self.mean_loss = 0
             for i in range(len(prediced_list)):
                 self.mean_loss += 0.5*((prediced_list[i] - expected_list[i])**2)
             self.mean_loss /= len(prediced_list)
             self.d_loss = [(prediced_list[i] - expected_list[i]) for i in range(len(prediced_list))]
         elif self.loss_type == "log":
-            self.mean_loss = 0
-            self.correct_answer_index = expected_list.index(max(expected_list))
-            self.intermediate_d_loss = self.post_activation_outputs
+            self.d_loss = self.post_activation_outputs[:]
             for i in range(len(self.post_activation_outputs)):
-                self.intermediate_d_loss[i] = -expected_list[i]*math.log(self.post_activation_outputs[i] + 1e-15)
-            self.d_loss = self.intermediate_d_loss
+                self.d_loss[i] = -expected_list[i]*math.log(self.post_activation_outputs[i] + 1e-15)
             for i in range(len(self.d_loss)):
                 self.mean_loss += self.d_loss[i]
-                # self.d_loss[i] = -((expected_list[i]/self.post_activation_outputs[i] + 1e-15)-((1-expected_list[i])/(1-self.post_activation_outputs[i] + 1e-15)))
                 self.d_loss[i] = (self.post_activation_outputs[i] - expected_list[i])
 
     def back_prop(self, inputted_loss_array):
@@ -64,9 +60,6 @@ class Layer:
             for i in range(len(inputted_loss_array)):
                 if self.outputs[i] < 0:
                     self.passed_on_loss_array[i] *= 0.1
-        # elif self.activation_function_type == "Softmax":
-        #     for i in range(len(inputted_loss_array)):
-        #         self.passed_on_loss_array[i] *= -self.post_activation_outputs[i]*(1-self.post_activation_outputs[i])
 
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
@@ -293,7 +286,7 @@ train_and_test(input_size = 1,
                output_size = 3, 
                inner_neuron_activation = "Leaky_ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 35,
+               epochs = 350,
                training_step = 0.001,
                training_questions = training_data.get_t_q(),
                training_answers = training_data.get_t_a(),
