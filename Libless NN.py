@@ -52,7 +52,7 @@ class Layer:
             for i in range(len(self.d_loss)):
                 self.mean_loss += self.d_loss[i]
                 # self.d_loss[i] = -((expected_list[i]/self.post_activation_outputs[i] + 1e-15)-((1-expected_list[i])/(1-self.post_activation_outputs[i] + 1e-15)))
-                self.d_loss[i] = -(self.post_activation_outputs[i] - expected_list[i])
+                self.d_loss[i] = (self.post_activation_outputs[i] - expected_list[i])
 
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = inputted_loss_array
