@@ -1,7 +1,7 @@
 import math
 import random
 E = math.e
-random.seed(0)
+random.seed(1)
 import csv
 
 #--------------------------------------------------------------------------------------------------------------------------------
@@ -9,17 +9,19 @@ class Layer:
     def __init__(self, previous_height, height, activation_function_type):
         self.biases = [0.1 * (random.random() * 2 - 1) for n in range(height)]
         self.weights = [[(1 * (random.random()) * 2 - 1) * math.sqrt(2 / previous_height) for n in range(previous_height)] for m in range(height)]
+        # self.weights = [[random.gauss(0, math.sqrt(2 / previous_height)) for n in range(previous_height)] for m in range(height)]
         self.delta_biases = [0] * height
         self.delta_weights = [[0] * previous_height for _ in range(height)]
         self.activation_function_type = activation_function_type
     
     def forward(self, previous_layer_outputs):
         self.previous_layer_outputs = previous_layer_outputs
-        self.outputs = [0]*len(self.biases)
-        for j in range(len(self.biases)):
-            for k in range(len(self.weights[0])):
-                self.outputs[j] += ((previous_layer_outputs[k]) * (self.weights[j][k]))
-            self.outputs[j] += self.biases[j]
+        self.outputs = [sum(previous_layer_outputs[k] * self.weights[m][k] for k in range(len(previous_layer_outputs))) + self.biases[m] for m in range(len(self.weights))]
+        # self.outputs = [0]*len(self.biases)
+        # for j in range(len(self.biases)):
+        #     for k in range(len(self.weights[0])):
+        #         self.outputs[j] += ((previous_layer_outputs[k]) * (self.weights[j][k]))
+        #     self.outputs[j] += self.biases[j]
 
     def activation_function(self):
         if self.activation_function_type == "None":
@@ -27,7 +29,7 @@ class Layer:
         elif self.activation_function_type == "ReLU":
             self.post_activation_outputs = [max(0, n) for n in self.outputs]
         elif self.activation_function_type == "Leaky_ReLU":
-            self.post_activation_outputs = [0.1*n if n<0 else n for n in self.outputs]
+            self.post_activation_outputs = [0.1 * n if n < 0 else n for n in self.outputs]
         elif self.activation_function_type == "Softmax":
             self.maximum_output = max(self.outputs)
             self.exp_outputs = [E**(n-self.maximum_output) for n in self.outputs]
@@ -51,7 +53,8 @@ class Layer:
             self.d_loss = self.intermediate_d_loss
             for i in range(len(self.d_loss)):
                 self.mean_loss += self.d_loss[i]
-                self.d_loss[i] = -((expected_list[i]/self.post_activation_outputs[i] + 1e-15)-((1-expected_list[i])/(1-self.post_activation_outputs[i] + 1e-15)))
+                # self.d_loss[i] = -((expected_list[i]/self.post_activation_outputs[i] + 1e-15)-((1-expected_list[i])/(1-self.post_activation_outputs[i] + 1e-15)))
+                self.d_loss[i] = (self.post_activation_outputs[i]-expected_list[i])/(self.post_activation_outputs[i]*(1-self.post_activation_outputs[i]) + 1e-15)
 
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = inputted_loss_array
@@ -157,6 +160,18 @@ class NN:
             self.layers[-1].activation_function()
             print(f"Predicting")
             self.prediction_outputs.append(self.layers[-1].post_activation_outputs)
+
+    def export_weights(self):
+        all_weights = []
+        for i in range(len(self.layers)):
+            all_weights.append(self.layers[i].weights)
+        return(all_weights)
+    
+    def export_biases(self):
+        all_biases = []
+        for i in range(len(self.layers)):
+            all_biases.append(self.layers[i].biases)
+        return(all_biases)
 
 #--------------------------------------------------------------------------------------------------------------------------------
 class Training_data:
@@ -280,18 +295,20 @@ def train_and_test(input_size, inner_layers_amount, neurons_per_layer, output_si
         print(neural.prediction_outputs)
     if is_classification == True:
         classification_compare(neural.prediction_outputs, predict_answers)
+    print(neural.export_biases())
+    print(neural.export_weights())
 
 train_and_test(input_size = 4, 
-               inner_layers_amount = 2, 
-               neurons_per_layer = 50, 
+               inner_layers_amount = 3, 
+               neurons_per_layer = 16, 
                output_size = 3, 
-               inner_neuron_activation = "Leaky_ReLU", 
+               inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 1000,
-               training_step = 0.1,
-               training_questions = iris_data.get_t_q(), 
-               training_answers = iris_data.get_t_a(), 
-               batch_size = 1000, 
-               predict_questions = iris_data.get_pred_q(), 
-               predict_answers = iris_data.get_pred_a(), 
+               epochs = 100000,
+               training_step = 0.01,
+               training_questions = iris_data.get_t_q(),
+               training_answers = iris_data.get_t_a(),
+               batch_size = 32,
+               predict_questions = iris_data.get_pred_q(),
+               predict_answers = iris_data.get_pred_a(),
                is_classification = True)
