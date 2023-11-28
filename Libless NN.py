@@ -7,19 +7,23 @@ import csv
 #--------------------------------------------------------------------------------------------------------------------------------
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
-        self.biases = [1 * (random.random() * 2 - 1) for n in range(height)]
+        self.biases = [0.1 * (random.random() * 2 - 1) for n in range(height)]
         self.weights = [[(1 * (random.random()) * 2 - 1) for n in range(previous_height)] for m in range(height)]
         self.delta_biases = [0] * height
-        self.delta_weights = [[0] * previous_height for _ in range(height)]
+        self.delta_weights = [[0] * previous_height for n in range(height)]
         self.activation_function_type = activation_function_type
     
+    # def forward(self, previous_layer_outputs):
+    #     self.previous_layer_outputs = previous_layer_outputs
+    #     self.outputs = [0]*len(self.biases)
+    #     for j in range(len(self.biases)):
+    #         for k in range(len(self.weights[0])):
+    #             self.outputs[j] += ((previous_layer_outputs[k]) * (self.weights[j][k]))
+    #         self.outputs[j] += self.biases[j]
+
     def forward(self, previous_layer_outputs):
         self.previous_layer_outputs = previous_layer_outputs
-        self.outputs = [0]*len(self.biases)
-        for j in range(len(self.biases)):
-            for k in range(len(self.weights[0])):
-                self.outputs[j] += ((previous_layer_outputs[k]) * (self.weights[j][k]))
-            self.outputs[j] += self.biases[j]
+        self.outputs = [sum(previous_layer_outputs[k] * self.weights[j][k] for k in range(len(self.weights[0]))) + self.biases[j] for j in range(len(self.biases))]
 
     def activation_function(self):
         if self.activation_function_type == "None":
@@ -27,40 +31,25 @@ class Layer:
         elif self.activation_function_type == "ReLU":
             self.post_activation_outputs = [max(0, n) for n in self.outputs]
         elif self.activation_function_type == "Leaky_ReLU":
-            self.post_activation_outputs = [0.1 * n if n < 0 else n for n in self.outputs]
+            self.post_activation_outputs = [0.01 * n if n < 0 else n for n in self.outputs]
         elif self.activation_function_type == "Softmax":
-            self.maximum_output = max(self.outputs)
-            self.exp_outputs = [E**(n-self.maximum_output) for n in self.outputs]
-            self.sum_exp_outputs = sum(self.exp_outputs)
-            self.post_activation_outputs = [n / self.sum_exp_outputs for n in self.exp_outputs]
+            exp_outputs = [E**(n-max(self.outputs)) for n in self.outputs]
+            self.post_activation_outputs = [n / sum(exp_outputs) for n in exp_outputs]
 
     def loss(self, prediced_list, expected_list, type):
         self.loss_type = type
-        self.mean_loss = 0
         if self.loss_type == "mse":
-            for i in range(len(prediced_list)):
-                self.mean_loss += 0.5*((prediced_list[i] - expected_list[i])**2)
-            self.mean_loss /= len(prediced_list)
+            self.mean_loss = 0.5*(sum((prediced_list[i]-expected_list[i])**2 for i in range(len(prediced_list))))/len(prediced_list)
             self.d_loss = [(prediced_list[i] - expected_list[i]) for i in range(len(prediced_list))]
         elif self.loss_type == "log":
-            self.d_loss = self.post_activation_outputs[:]
-            for i in range(len(self.post_activation_outputs)):
-                self.d_loss[i] = -expected_list[i]*math.log(self.post_activation_outputs[i] + 1e-15)
-            for i in range(len(self.d_loss)):
-                self.mean_loss += self.d_loss[i]
-                self.d_loss[i] = (self.post_activation_outputs[i] - expected_list[i])
+            self.mean_loss = sum(-expected_list[i] * math.log(self.post_activation_outputs[i] + 1e-15) for i in range(len(self.post_activation_outputs)))
+            self.d_loss = [self.post_activation_outputs[i]-expected_list[i] for i in range(len(self.post_activation_outputs))]
 
     def back_prop(self, inputted_loss_array):
-        self.passed_on_loss_array = inputted_loss_array
-        if self.activation_function_type == "ReLU":
-            for i in range(len(inputted_loss_array)):
-                if self.outputs[i] < 0:
-                    self.passed_on_loss_array[i] *= 0
-        elif self.activation_function_type == "Leaky_ReLU":
-            for i in range(len(inputted_loss_array)):
-                if self.outputs[i] < 0:
-                    self.passed_on_loss_array[i] *= 0.1
+        self.passed_on_loss_array = [0 if self.outputs[i] < 0 and self.activation_function_type == "ReLU" else 0.01 * inputted_loss_array[i] if self.outputs[i] < 0 and self.activation_function_type == "Leaky_ReLU" else inputted_loss_array[i] for i in range(len(inputted_loss_array))]
 
+        # self.delta_biases = []
+        # self.delta_weights = []
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
         for i in range(len(self.weights)):
@@ -165,37 +154,6 @@ class NN:
         return(all_biases)
 
 #--------------------------------------------------------------------------------------------------------------------------------
-# class Training_data:
-#     def __init__(self, amount_to_gen):
-#         self.training_inputs = []
-#         self.training_outputs = []
-#         for i in range(amount_to_gen):
-#             x1 = random.random()*20
-#             self.training_inputs.append([x1])
-#             self.training_outputs.append([1,0,0] if x1<5 else [0,1,0] if 5<=x1<13 else [0,0,1])
-#     def get_t_q(self):
-#         return(self.training_inputs)
-#     def get_t_a(self):
-#         return(self.training_outputs)
-        
-# #--------------------------------------------------------------------------------------------------------------------------------
-# class Prediction_data:
-#     def __init__(self, amount_to_gen):
-#         self.prediction_inputs = []
-#         self.prediction_outputs = []
-#         for i in range(amount_to_gen):
-#             x1 = random.random()*20
-#             self.prediction_inputs.append([x1])
-#             self.prediction_outputs.append([1,0,0] if x1<5 else [0,1,0] if 5<=x1<13 else [0,0,1])
-#     def get_p_q(self):
-#         return(self.prediction_inputs)
-#     def get_p_a(self):
-#         return(self.prediction_outputs)
-
-# #--------------------------------------------------------------------------------------------------------------------------------
-# training_data = Training_data(1000)
-# prediction_data = Prediction_data(100)
-#--------------------------------------------------------------------------------------------------------------------------------
 def one_hot_encoding(data, data_types):
     output = []
     for i in range(len(data)):
@@ -235,12 +193,12 @@ class QuestionsAndAnswers():
         random.shuffle(combined_data)
         # Split the shuffled data back into training_data and training_answers
         questions, answers = zip(*combined_data)
-        
+
         self.training_data_questions = questions[:amount]
         self.training_data_answers = answers[:amount]
         self.prediction_data_questions = questions[amount:]
         self.prediction_data_answers = answers[amount:]
-    
+
     def get_t_q(self):
         return self.training_data_questions
     def get_t_a(self):
@@ -284,7 +242,7 @@ train_and_test(input_size = 4,
                inner_layers_amount = 10, 
                neurons_per_layer = 10, 
                output_size = 3, 
-               inner_neuron_activation = "ReLU", 
+               inner_neuron_activation = "Leaky_ReLU", 
                last_layer_activation = "Softmax", 
                epochs = 1000,
                training_step = 0.01,
