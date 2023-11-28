@@ -12,14 +12,6 @@ class Layer:
         self.delta_biases = [0] * height
         self.delta_weights = [[0] * previous_height for n in range(height)]
         self.activation_function_type = activation_function_type
-    
-    # def forward(self, previous_layer_outputs):
-    #     self.previous_layer_outputs = previous_layer_outputs
-    #     self.outputs = [0]*len(self.biases)
-    #     for j in range(len(self.biases)):
-    #         for k in range(len(self.weights[0])):
-    #             self.outputs[j] += ((previous_layer_outputs[k]) * (self.weights[j][k]))
-    #         self.outputs[j] += self.biases[j]
 
     def forward(self, previous_layer_outputs):
         self.previous_layer_outputs = previous_layer_outputs
@@ -242,11 +234,11 @@ train_and_test(input_size = 4,
                output_size = 3, 
                inner_neuron_activation = "Leaky_ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 1000,
+               epochs = 100,
                training_step = 0.01,
                training_questions = iris_data.get_t_q(),
                training_answers = iris_data.get_t_a(),
-               batch_size = 1000,
+               batch_size = 32,
                predict_questions = iris_data.get_p_q(),
                predict_answers = iris_data.get_p_a(),
                is_classification = True)
