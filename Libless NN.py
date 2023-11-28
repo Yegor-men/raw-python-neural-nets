@@ -7,7 +7,7 @@ import csv
 #--------------------------------------------------------------------------------------------------------------------------------
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
-        self.biases = [0.1 * (random.random() * 2 - 1) for n in range(height)]
+        self.biases = [1 * (random.random() * 2 - 1) for n in range(height)]
         self.weights = [[(1 * (random.random()) * 2 - 1) for n in range(previous_height)] for m in range(height)]
         self.delta_biases = [0] * height
         self.delta_weights = [[0] * previous_height for n in range(height)]
@@ -48,8 +48,6 @@ class Layer:
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = [0 if self.outputs[i] < 0 and self.activation_function_type == "ReLU" else 0.01 * inputted_loss_array[i] if self.outputs[i] < 0 and self.activation_function_type == "Leaky_ReLU" else inputted_loss_array[i] for i in range(len(inputted_loss_array))]
 
-        # self.delta_biases = []
-        # self.delta_weights = []
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
         for i in range(len(self.weights)):
@@ -239,8 +237,8 @@ def train_and_test(input_size, inner_layers_amount, neurons_per_layer, output_si
     # print(neural.export_weights())
 
 train_and_test(input_size = 4, 
-               inner_layers_amount = 10, 
-               neurons_per_layer = 10, 
+               inner_layers_amount = 2, 
+               neurons_per_layer = 16, 
                output_size = 3, 
                inner_neuron_activation = "Leaky_ReLU", 
                last_layer_activation = "Softmax", 
