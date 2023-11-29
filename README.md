@@ -1,9 +1,7 @@
 # Libless-NN
 
-A libraryless Neural Network in Python (Not even Numpy)
+This project is more personal than anything but free to use if anyone wants. The base model does not require any libraries and runs on raw Python. There is another Numpyfied version that, as you guessed, uses Numpy to speed up the calculations. The purpose of the base model was mostly more of a personal challenge and to better understand how NNs work more than anything
 
-A rather slow and impractical Neural Network scaleable to theoretically any size. Used to better understand how a Neural Network works via an array-based system. The base version is without any libraries while there is also one that makes use of Numpy and subsequently matrixes.
+Both of them are quite flexible and are technically scalable to any size, but it depends on your processing power. Export weights and biases is in there as well. You can modify the code a little if you want to do something with the weights and biases or with the outputs too.
 
-Also includes some data generation, although the algorithm is a bit finnicky and it would probably be best to find and import the MNIST or something else, whatever is wanted.
-
-Will later be expanded to image and text gen and stuff
+Have fun
