@@ -229,21 +229,17 @@ class QuestionsAndAnswers():
 
 iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 99)
 
-def classification_compare(prediction, actual):
-        total_correct = 0
-        # print(prediction)
-        for i in range(len(prediction)):
-            index_of_max = prediction[i].index(max(prediction[i]))
-            for j in range(len(prediction[0])):
-                if j == index_of_max:
-                    prediction[i][j] = 1
-                else:
-                    prediction[i][j] = 0
-        # print(prediction)
-        for i in range(len(prediction)):
-            if prediction[i] == actual[i]:
-                total_correct += 1
-        print(f"Total accuracy: {round((total_correct/len(prediction))*100,5)} %")
+def prediction_check(prediction, actual, is_classification):
+        print(f"\nPredictions:\n{prediction}")
+        if actual != None:    
+            if is_classification == True:
+                total_correct = sum(1 for pred, actual_row in zip(prediction, actual) if pred.index(max(pred)) == actual_row.index(max(actual_row)))
+                print(f"\nTotal accuracy: {round((total_correct/len(prediction))*100,5)} %")
+            else:
+                losses = [sum(0.5 * (prediction[i][j] - actual[i][j]) ** 2 for j in range(len(prediction[0]))) / len(prediction[0]) for i in range(len(prediction))]
+                total_avg_loss = sum(losses)/len(losses)
+                print(f"\nMean loss: {round(total_avg_loss,5)}")
+                print(f"\nAll losses: \n{losses}")
 
 def train_and_test(input_size, 
                    inner_layers_amount, 
@@ -265,20 +261,16 @@ def train_and_test(input_size,
     neural.initialize_optimizer(beta1, beta2, epsilon, learning_rate)
     neural.train(epochs, training_questions, training_answers, batch_size)
     neural.predict(predict_questions)
-    if is_classification == False:
-        print(neural.prediction_outputs)
-    if is_classification == True:
-        classification_compare(neural.prediction_outputs, predict_answers)
-    # print(neural.export_biases())
-    # print(neural.export_weights())
+    prediction_check(neural.prediction_outputs, predict_answers, is_classification)
+    # print(f"\nWeights:\n{neural.export_weights()}\n\nBiases:\n{neural.export_biases()}")
 
 train_and_test(input_size = 4, 
                inner_layers_amount = 2, 
-               neurons_per_layer = 16, 
+               neurons_per_layer = 8, 
                output_size = 3, 
-               inner_neuron_activation = "Leaky_ReLU", 
+               inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 5,
+               epochs = 20,
                learning_rate = 0.01,
                training_questions = iris_data.get_t_q(),
                training_answers = iris_data.get_t_a(),
