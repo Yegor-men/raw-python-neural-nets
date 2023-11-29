@@ -4,7 +4,7 @@ E = math.e
 random.seed(0)
 import csv
 
-#--------------------------------------------------------------------------------------------------------------------------------
+
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
         self.biases = [1 * (random.random() * 2 - 1) for n in range(height)]
@@ -12,10 +12,24 @@ class Layer:
         self.delta_biases = [0] * height
         self.delta_weights = [[0] * previous_height for n in range(height)]
         self.activation_function_type = activation_function_type
+        self.t = 0
 
     def forward(self, previous_layer_outputs):
         self.previous_layer_outputs = previous_layer_outputs
         self.outputs = [sum(previous_layer_outputs[k] * self.weights[j][k] for k in range(len(self.weights[0]))) + self.biases[j] for j in range(len(self.biases))]
+
+    def initialize_optimizer(self, beta1, beta2, epsilon, learning_rate):
+        self.learning_rate = learning_rate
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.epsilon = epsilon
+        self.m = None
+        self.v = None
+        self.m_weights = [[0] * len(self.weights[0]) for _ in range(len(self.weights))]
+        self.v_weights = [[0] * len(self.weights[0]) for _ in range(len(self.weights))]
+        self.m_biases = [0] * len(self.biases)
+        self.v_biases = [0] * len(self.biases)
+        self.t = 0
 
     def activation_function(self):
         if self.activation_function_type == "None":
@@ -39,7 +53,6 @@ class Layer:
 
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = [0 if self.outputs[i] < 0 and self.activation_function_type == "ReLU" else 0.01 * inputted_loss_array[i] if self.outputs[i] < 0 and self.activation_function_type == "Leaky_ReLU" else inputted_loss_array[i] for i in range(len(inputted_loss_array))]
-
         for i in range(len(self.biases)):
             self.delta_biases[i] += self.passed_on_loss_array[i]
         for i in range(len(self.weights)):
@@ -50,18 +63,40 @@ class Layer:
             for j in range(len(self.weights)):
                 self.loss_to_pass[i] += self.passed_on_loss_array[j] * self.weights[j][i]
 
-    def update_w_and_b(self, batch_size, learning_rate):
+    def update_w_and_b(self, batch_size):
+        self.t += 1
         for i in range(len(self.delta_weights)):
             for j in range(len(self.delta_weights[0])):
                 self.delta_weights[i][j] /= batch_size
-                self.weights[i][j] -= self.delta_weights[i][j]*learning_rate
+
+                # Adam optimizer updates
+                self.m_weights[i][j] = self.beta1 * self.m_weights[i][j] + (1 - self.beta1) * self.delta_weights[i][j]
+                self.v_weights[i][j] = self.beta2 * self.v_weights[i][j] + (1 - self.beta2) * (self.delta_weights[i][j] ** 2)
+
+                # Bias correction
+                m_hat = self.m_weights[i][j] / (1 - self.beta1 ** self.t)
+                v_hat = self.v_weights[i][j] / (1 - self.beta2 ** self.t)
+
+                self.weights[i][j] -= self.learning_rate * m_hat / (math.sqrt(v_hat) + self.epsilon)
+
         for i in range(len(self.biases)):
             self.delta_biases[i] /= batch_size
-            self.biases[i] -= self.delta_biases[i]*learning_rate
+
+            # Adam optimizer updates for biases
+            self.m_biases[i] = self.beta1 * self.m_biases[i] + (1 - self.beta1) * self.delta_biases[i]
+            self.v_biases[i] = self.beta2 * self.v_biases[i] + (1 - self.beta2) * (self.delta_biases[i] ** 2)
+
+            # Bias correction
+            m_hat = self.m_biases[i] / (1 - self.beta1 ** self.t)
+            v_hat = self.v_biases[i] / (1 - self.beta2 ** self.t)
+
+            self.biases[i] -= self.learning_rate * m_hat / (math.sqrt(v_hat) + self.epsilon)
+
+        # Reset delta arrays
         self.delta_biases = [0] * len(self.biases)
         self.delta_weights = [[0] * len(self.weights[0]) for _ in range(len(self.weights))]
 
-#--------------------------------------------------------------------------------------------------------------------------------
+
 class NN:
     def __init__(self, input_size, inner_layers_number, height, output_size, inner_layer_activation, last_layer_activation):
         self.inner_layer_activation = inner_layer_activation
@@ -71,6 +106,10 @@ class NN:
         self.layers[-1] = Layer(height, output_size, last_layer_activation)
         for i in range(inner_layers_number):
             self.layers[i+1] = Layer(height, height, inner_layer_activation)
+        
+    def initialize_optimizer(self, beta1, beta2, epsilon, learning_rate):
+        for i in range(len(self.layers)):
+            self.layers[i].initialize_optimizer(beta1, beta2, epsilon, learning_rate)
     
     def train(self, epochs, learning_rate, training_data, training_answers, batch_size):
         current_epoch = 0
@@ -108,11 +147,11 @@ class NN:
                     current_batch = 0
                     # print(f"{round(batch_loss/batch_size,3)}")
                     for g in range(len(self.layers)):
-                        self.layers[g].update_w_and_b(batch_size, learning_rate)
+                        self.layers[g].update_w_and_b(batch_size)
                     batch_loss = 0
             if current_batch != 0:
                 for k in range(len(self.layers)):
-                    self.layers[k].update_w_and_b(batch_size, learning_rate)
+                    self.layers[k].update_w_and_b(batch_size)
             current_epoch += 1
             print(f"Epochs completed: {current_epoch}/{epochs} |Average epoch loss: {current_epoch_loss/len(training_data)}")
 
@@ -143,7 +182,6 @@ class NN:
             all_biases.append(self.layers[i].biases)
         return(all_biases)
 
-#--------------------------------------------------------------------------------------------------------------------------------
 def one_hot_encoding(data, data_types):
     output = []
     for i in range(len(data)):
@@ -154,10 +192,9 @@ def one_hot_encoding(data, data_types):
             else:
                 output[i].append(0)
     return(output)
-#-----IRIS-DATA------------------------------------------------------------------------------------------------------------------
+
 questions = []
 labels = []
-
 with open("Iris.csv", "r") as file:
     csv_reader = csv.reader(file)
     next(csv_reader)
@@ -166,7 +203,6 @@ with open("Iris.csv", "r") as file:
         label = row[5]
         questions.append(feature_row)
         labels.append(label)
-
 for i in range(len(questions)):
     if labels[i] == "Iris-setosa":
         labels[i] = 0
@@ -200,7 +236,6 @@ class QuestionsAndAnswers():
 
 iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 99)
 
-#--------------------------------------------------------------------------------------------------------------------------------
 def classification_compare(prediction, actual):
         total_correct = 0
         print(prediction)
@@ -217,9 +252,25 @@ def classification_compare(prediction, actual):
                 total_correct += 1
         print(f"Total accuracy: {round((total_correct/len(prediction))*100,5)} %")
 
-def train_and_test(input_size, inner_layers_amount, neurons_per_layer, output_size, inner_neuron_activation, last_layer_activation, epochs, training_step, training_questions, training_answers, batch_size, predict_questions, predict_answers, is_classification):
+def train_and_test(input_size, 
+                   inner_layers_amount, 
+                   neurons_per_layer, 
+                   output_size, 
+                   inner_neuron_activation, 
+                   last_layer_activation, 
+                   epochs, learning_rate, 
+                   training_questions, 
+                   training_answers, 
+                   batch_size, 
+                   predict_questions, 
+                   predict_answers, 
+                   is_classification,
+                   beta1,
+                   beta2,
+                   epsilon):
     neural = NN(input_size, inner_layers_amount, neurons_per_layer, output_size, inner_neuron_activation, last_layer_activation)
-    neural.train(epochs, training_step, training_questions, training_answers, batch_size)
+    neural.initialize_optimizer(beta1, beta2, epsilon, learning_rate)
+    neural.train(epochs, learning_rate, training_questions, training_answers, batch_size)
     neural.predict(predict_questions)
     if is_classification == False:
         print(neural.prediction_outputs)
@@ -234,11 +285,14 @@ train_and_test(input_size = 4,
                output_size = 3, 
                inner_neuron_activation = "Leaky_ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 100,
-               training_step = 0.01,
+               epochs = 30,
+               learning_rate = 0.01,
                training_questions = iris_data.get_t_q(),
                training_answers = iris_data.get_t_a(),
-               batch_size = 32,
+               batch_size = 16,
                predict_questions = iris_data.get_p_q(),
                predict_answers = iris_data.get_p_a(),
-               is_classification = True)
+               is_classification = True,
+               beta1 = 0.9,
+               beta2 = 0.99,
+               epsilon = 1e-8)
