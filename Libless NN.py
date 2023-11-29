@@ -68,30 +68,23 @@ class Layer:
         for i in range(len(self.delta_weights)):
             for j in range(len(self.delta_weights[0])):
                 self.delta_weights[i][j] /= batch_size
-
                 # Adam optimizer updates
                 self.m_weights[i][j] = self.beta1 * self.m_weights[i][j] + (1 - self.beta1) * self.delta_weights[i][j]
                 self.v_weights[i][j] = self.beta2 * self.v_weights[i][j] + (1 - self.beta2) * (self.delta_weights[i][j] ** 2)
-
                 # Bias correction
                 m_hat = self.m_weights[i][j] / (1 - self.beta1 ** self.t)
                 v_hat = self.v_weights[i][j] / (1 - self.beta2 ** self.t)
-
                 self.weights[i][j] -= self.learning_rate * m_hat / (math.sqrt(v_hat) + self.epsilon)
 
         for i in range(len(self.biases)):
             self.delta_biases[i] /= batch_size
-
             # Adam optimizer updates for biases
             self.m_biases[i] = self.beta1 * self.m_biases[i] + (1 - self.beta1) * self.delta_biases[i]
             self.v_biases[i] = self.beta2 * self.v_biases[i] + (1 - self.beta2) * (self.delta_biases[i] ** 2)
-
             # Bias correction
             m_hat = self.m_biases[i] / (1 - self.beta1 ** self.t)
             v_hat = self.v_biases[i] / (1 - self.beta2 ** self.t)
-
             self.biases[i] -= self.learning_rate * m_hat / (math.sqrt(v_hat) + self.epsilon)
-
         # Reset delta arrays
         self.delta_biases = [0] * len(self.biases)
         self.delta_weights = [[0] * len(self.weights[0]) for _ in range(len(self.weights))]
@@ -111,7 +104,7 @@ class NN:
         for i in range(len(self.layers)):
             self.layers[i].initialize_optimizer(beta1, beta2, epsilon, learning_rate)
     
-    def train(self, epochs, learning_rate, training_data, training_answers, batch_size):
+    def train(self, epochs, training_data, training_answers, batch_size):
         current_epoch = 0
         current_batch = 0
         for i in range(epochs):
@@ -270,7 +263,7 @@ def train_and_test(input_size,
                    epsilon):
     neural = NN(input_size, inner_layers_amount, neurons_per_layer, output_size, inner_neuron_activation, last_layer_activation)
     neural.initialize_optimizer(beta1, beta2, epsilon, learning_rate)
-    neural.train(epochs, learning_rate, training_questions, training_answers, batch_size)
+    neural.train(epochs, training_questions, training_answers, batch_size)
     neural.predict(predict_questions)
     if is_classification == False:
         print(neural.prediction_outputs)
@@ -283,9 +276,9 @@ train_and_test(input_size = 4,
                inner_layers_amount = 2, 
                neurons_per_layer = 16, 
                output_size = 3, 
-               inner_neuron_activation = "Leaky_ReLU", 
+               inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 30,
+               epochs = 5,
                learning_rate = 0.01,
                training_questions = iris_data.get_t_q(),
                training_answers = iris_data.get_t_a(),
@@ -294,5 +287,5 @@ train_and_test(input_size = 4,
                predict_answers = iris_data.get_p_a(),
                is_classification = True,
                beta1 = 0.9,
-               beta2 = 0.99,
+               beta2 = 0.999,
                epsilon = 1e-8)
