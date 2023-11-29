@@ -150,6 +150,7 @@ class NN:
 
     def predict(self, data_to_predict):
         self.prediction_outputs = []
+        print(f"Predicting")
         for i in range(len(data_to_predict)):
             self.layers[0].forward(data_to_predict[i])
             self.layers[0].activation_function()
@@ -160,7 +161,6 @@ class NN:
             #last layer forward and activation
             self.layers[-1].forward(self.layers[-2].post_activation_outputs)
             self.layers[-1].activation_function()
-            print(f"Predicting")
             self.prediction_outputs.append(self.layers[-1].post_activation_outputs)
 
     def export_weights(self):
@@ -231,7 +231,7 @@ iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 99)
 
 def classification_compare(prediction, actual):
         total_correct = 0
-        print(prediction)
+        # print(prediction)
         for i in range(len(prediction)):
             index_of_max = prediction[i].index(max(prediction[i]))
             for j in range(len(prediction[0])):
@@ -239,7 +239,7 @@ def classification_compare(prediction, actual):
                     prediction[i][j] = 1
                 else:
                     prediction[i][j] = 0
-        print(prediction)
+        # print(prediction)
         for i in range(len(prediction)):
             if prediction[i] == actual[i]:
                 total_correct += 1
@@ -276,7 +276,7 @@ train_and_test(input_size = 4,
                inner_layers_amount = 2, 
                neurons_per_layer = 16, 
                output_size = 3, 
-               inner_neuron_activation = "ReLU", 
+               inner_neuron_activation = "Leaky_ReLU", 
                last_layer_activation = "Softmax", 
                epochs = 5,
                learning_rate = 0.01,
