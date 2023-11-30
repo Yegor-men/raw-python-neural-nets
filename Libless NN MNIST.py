@@ -15,7 +15,6 @@ y_test_one_hot = to_categorical(test_y, 10)
 print(y_train_one_hot[0])
 
 
-
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
         self.biases = [1 * (random.random() * 2 - 1) for n in range(height)]
@@ -196,51 +195,6 @@ def one_hot_encoding(data, data_types):
             else:
                 output[i].append(0)
     return(output)
-
-# questions = []
-# labels = []
-# with open("Iris.csv", "r") as file:
-#     csv_reader = csv.reader(file)
-#     next(csv_reader)
-#     for row in csv_reader:
-#         feature_row = list(map(float, row[1:5]))
-#         label = row[5]
-#         questions.append(feature_row)
-#         labels.append(label)
-# for i in range(len(questions)):
-#     if labels[i] == "Iris-setosa":
-#         labels[i] = 0
-#     elif labels[i] == "Iris-versicolor":
-#         labels[i] = 1
-#     elif labels[i] == "Iris-virginica":
-#         labels[i] = 2
-
-
-# class QuestionsAndAnswers():
-#     def __init__(self, questions, answers, amount):
-#         combined_data = list(zip(questions, answers))
-#         # Shuffle the combined data
-#         random.shuffle(combined_data)
-#         # Split the shuffled data back into training_data and training_answers
-#         questions, answers = zip(*combined_data)
-
-#         self.training_data_questions = questions[:amount]
-#         self.training_data_answers = answers[:amount]
-#         self.prediction_data_questions = questions[amount:]
-#         self.prediction_data_answers = answers[amount:]
-
-#     def get_t_q(self):
-#         return self.training_data_questions
-#     def get_t_a(self):
-#         return self.training_data_answers
-#     def get_p_q(self):
-#         return self.prediction_data_questions
-#     def get_p_a(self):
-#         return self.prediction_data_answers
-
-# iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 99)
-
-
 
 
 def prediction_check(prediction, actual, is_classification):
