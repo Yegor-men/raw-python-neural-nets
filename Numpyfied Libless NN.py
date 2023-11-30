@@ -69,41 +69,18 @@ class Layer:
         self.delta_weights = (1 / batch_size) * np.array(self.delta_weights)
         self.m_weights = self.beta1 * self.m_weights + (1 - self.beta1) * self.delta_weights
         self.v_weights = self.beta2 * self.v_weights + (1 - self.beta2) * (self.delta_weights * self.delta_weights)
-        m_hat = (1 / (1 - self.beta1 ** self.t)) * self.m_weights[index1, index2]
-        v_hat = (1 / (1 - self.beta2 ** self.t)) * self.v_weights[index1, index2]
+        m_hat = (1 / (1 - self.beta1 ** self.t)) * self.m_weights
+        v_hat = (1 / (1 - self.beta2 ** self.t)) * self.v_weights
         self.weights = self.weights - self.learning_rate * (1 / (np.sqrt(v_hat) + self.epsilon)) * m_hat
 
         index1 = 0  # Change these values accordingly
         self.delta_biases = (1 / batch_size) * np.array(self.delta_biases)
         self.m_biases = self.beta1 * self.m_biases + (1 - self.beta1) * self.delta_biases
         self.v_biases = self.beta2 * self.v_biases + (1 - self.beta2) * (self.delta_biases * self.delta_biases)
-        m_hat = (1 / (1 - self.beta1 ** self.t)) * self.m_biases[index1]
-        v_hat = (1 / (1 - self.beta2 ** self.t)) * self.v_biases[index1]
+        m_hat = (1 / (1 - self.beta1 ** self.t)) * self.m_biases
+        v_hat = (1 / (1 - self.beta2 ** self.t)) * self.v_biases
         self.biases = self.biases - self.learning_rate * (1 / (np.sqrt(v_hat) + self.epsilon)) * m_hat
 
-        
-        # for i in range(len(self.delta_weights)):
-        #     for j in range(len(self.delta_weights[0])):
-        #         self.delta_weights[i][j] /= batch_size
-        #         # Adam optimizer updates
-        #         self.m_weights[i][j] = self.beta1 * self.m_weights[i][j] + (1 - self.beta1) * self.delta_weights[i][j]
-        #         self.v_weights[i][j] = self.beta2 * self.v_weights[i][j] + (1 - self.beta2) * (self.delta_weights[i][j] ** 2)
-        #         # Bias correction
-        #         m_hat = self.m_weights[i][j] / (1 - self.beta1 ** self.t)
-        #         v_hat = self.v_weights[i][j] / (1 - self.beta2 ** self.t)
-        #         self.weights[i][j] -= self.learning_rate * m_hat / (math.sqrt(v_hat) + self.epsilon)
-        # for i in range(len(self.biases)):
-        #     self.delta_biases[i] /= batch_size
-        #     # Adam optimizer updates for biases
-        #     self.m_biases[i] = self.beta1 * self.m_biases[i] + (1 - self.beta1) * self.delta_biases[i]
-        #     self.v_biases[i] = self.beta2 * self.v_biases[i] + (1 - self.beta2) * (self.delta_biases[i] ** 2)
-        #     # Bias correction
-        #     m_hat = self.m_biases[i] / (1 - self.beta1 ** self.t)
-        #     v_hat = self.v_biases[i] / (1 - self.beta2 ** self.t)
-        #     self.biases[i] -= self.learning_rate * m_hat / (math.sqrt(v_hat) + self.epsilon)
-        # # Reset delta arrays
-        # self.delta_biases = [0] * len(self.biases)
-        # self.delta_weights = [[0] * len(self.weights[0]) for _ in range(len(self.weights))]
         self.delta_biases = np.zeros_like(self.biases)
         self.delta_weights = np.zeros_like(self.weights)
 
