@@ -2,7 +2,6 @@ import math
 import random
 E = math.e
 random.seed(0)
-import csv
 from keras.datasets import mnist
 from keras.utils import to_categorical
 import numpy as np
@@ -12,34 +11,31 @@ train_X_flat = train_X.reshape(train_X.shape[0], -1)
 test_X_flat = train_X.reshape(test_X.shape[0], -1)
 y_train_one_hot = to_categorical(train_y, 10)
 y_test_one_hot = to_categorical(test_y, 10)
-print(y_train_one_hot[0])
-
 
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
-        self.biases = [1 * (random.random() * 2 - 1) for n in range(height)]
-        self.weights = [[(1 * (random.random()) * 2 - 1) for n in range(previous_height)] for m in range(height)]
-        self.delta_biases = [0] * height
-        self.delta_weights = [[0] * previous_height for n in range(height)]
+        self.biases = np.array([1 * (random.random() * 2 - 1) for n in range(height)])
+        self.weights = np.array([[(1 * (random.random()) * 2 - 1) for n in range(previous_height)] for m in range(height)])
+        self.delta_biases = np.array([0] * height)
+        self.delta_weights = np.array([[0] * previous_height for n in range(height)])
         self.activation_function_type = activation_function_type
         self.t = 0
+        self.m = None
+        self.v = None
+        self.m_weights = np.zeros_like(self.weights)
+        self.v_weights = np.zeros_like(self.weights)
+        self.m_biases = np.zeros_like(self.biases)
+        self.v_biases = np.zeros_like(self.biases)
 
     def forward(self, previous_layer_outputs):
         self.previous_layer_outputs = previous_layer_outputs
-        self.outputs = [sum(previous_layer_outputs[k] * self.weights[j][k] for k in range(len(self.weights[0]))) + self.biases[j] for j in range(len(self.biases))]
-
+        self.outputs = np.dot(previous_layer_outputs,self.weights.T) + self.biases
+        
     def initialize_optimizer(self, beta1, beta2, epsilon, learning_rate):
         self.learning_rate = learning_rate
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
-        self.m = None
-        self.v = None
-        self.m_weights = [[0] * len(self.weights[0]) for _ in range(len(self.weights))]
-        self.v_weights = [[0] * len(self.weights[0]) for _ in range(len(self.weights))]
-        self.m_biases = [0] * len(self.biases)
-        self.v_biases = [0] * len(self.biases)
-        self.t = 0
 
     def activation_function(self):
         if self.activation_function_type == "None":
@@ -63,41 +59,34 @@ class Layer:
 
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = [0 if self.outputs[i] < 0 and self.activation_function_type == "ReLU" else 0.01 * inputted_loss_array[i] if self.outputs[i] < 0 and self.activation_function_type == "Leaky_ReLU" else inputted_loss_array[i] for i in range(len(inputted_loss_array))]
-        for i in range(len(self.biases)):
-            self.delta_biases[i] += self.passed_on_loss_array[i]
+        self.delta_biases = self.delta_biases + np.array(self.passed_on_loss_array)
         for i in range(len(self.weights)):
             for j in range(len(self.weights[0])):
                 self.delta_weights[i][j] += self.passed_on_loss_array[i]*self.previous_layer_outputs[j]
-        self.loss_to_pass = [0] * len(self.weights[0])
+        self.loss_to_pass = np.zeros_like(self.weights[0])
         for i in range(len(self.loss_to_pass)):
             for j in range(len(self.weights)):
                 self.loss_to_pass[i] += self.passed_on_loss_array[j] * self.weights[j][i]
 
     def update_w_and_b(self, batch_size):
         self.t += 1
-        for i in range(len(self.delta_weights)):
-            for j in range(len(self.delta_weights[0])):
-                self.delta_weights[i][j] /= batch_size
-                # Adam optimizer updates
-                self.m_weights[i][j] = self.beta1 * self.m_weights[i][j] + (1 - self.beta1) * self.delta_weights[i][j]
-                self.v_weights[i][j] = self.beta2 * self.v_weights[i][j] + (1 - self.beta2) * (self.delta_weights[i][j] ** 2)
-                # Bias correction
-                m_hat = self.m_weights[i][j] / (1 - self.beta1 ** self.t)
-                v_hat = self.v_weights[i][j] / (1 - self.beta2 ** self.t)
-                self.weights[i][j] -= self.learning_rate * m_hat / (math.sqrt(v_hat) + self.epsilon)
 
-        for i in range(len(self.biases)):
-            self.delta_biases[i] /= batch_size
-            # Adam optimizer updates for biases
-            self.m_biases[i] = self.beta1 * self.m_biases[i] + (1 - self.beta1) * self.delta_biases[i]
-            self.v_biases[i] = self.beta2 * self.v_biases[i] + (1 - self.beta2) * (self.delta_biases[i] ** 2)
-            # Bias correction
-            m_hat = self.m_biases[i] / (1 - self.beta1 ** self.t)
-            v_hat = self.v_biases[i] / (1 - self.beta2 ** self.t)
-            self.biases[i] -= self.learning_rate * m_hat / (math.sqrt(v_hat) + self.epsilon)
-        # Reset delta arrays
-        self.delta_biases = [0] * len(self.biases)
-        self.delta_weights = [[0] * len(self.weights[0]) for _ in range(len(self.weights))]
+        self.delta_weights = (1 / batch_size) * np.array(self.delta_weights)
+        self.m_weights = self.beta1 * self.m_weights + (1 - self.beta1) * self.delta_weights
+        self.v_weights = self.beta2 * self.v_weights + (1 - self.beta2) * (self.delta_weights * self.delta_weights)
+        m_hat = (1 / (1 - self.beta1 ** self.t)) * self.m_weights
+        v_hat = (1 / (1 - self.beta2 ** self.t)) * self.v_weights
+        self.weights = self.weights - self.learning_rate * (1 / (np.sqrt(v_hat) + self.epsilon)) * m_hat
+
+        self.delta_biases = (1 / batch_size) * np.array(self.delta_biases)
+        self.m_biases = self.beta1 * self.m_biases + (1 - self.beta1) * self.delta_biases
+        self.v_biases = self.beta2 * self.v_biases + (1 - self.beta2) * (self.delta_biases * self.delta_biases)
+        m_hat = (1 / (1 - self.beta1 ** self.t)) * self.m_biases
+        v_hat = (1 / (1 - self.beta2 ** self.t)) * self.v_biases
+        self.biases = self.biases - self.learning_rate * (1 / (np.sqrt(v_hat) + self.epsilon)) * m_hat
+
+        self.delta_biases = np.zeros_like(self.biases)
+        self.delta_weights = np.zeros_like(self.weights)
 
 
 class NN:
@@ -109,11 +98,11 @@ class NN:
         self.layers[-1] = Layer(height, output_size, last_layer_activation)
         for i in range(inner_layers_number):
             self.layers[i+1] = Layer(height, height, inner_layer_activation)
-        
+    
     def initialize_optimizer(self, beta1, beta2, epsilon, learning_rate):
         for i in range(len(self.layers)):
             self.layers[i].initialize_optimizer(beta1, beta2, epsilon, learning_rate)
-    
+
     def train(self, epochs, training_data, training_answers, batch_size):
         current_epoch = 0
         current_batch = 0
@@ -148,7 +137,7 @@ class NN:
                     self.layers[-l-2].back_prop(self.layers[-l-1].loss_to_pass)
                 if current_batch == batch_size:
                     current_batch = 0
-                    # print(f"{round(batch_loss/batch_size,3)}")
+                    print(f"{round(batch_loss/batch_size,3)}")
                     for g in range(len(self.layers)):
                         self.layers[g].update_w_and_b(batch_size)
                     batch_loss = 0
@@ -196,7 +185,6 @@ def one_hot_encoding(data, data_types):
                 output[i].append(0)
     return(output)
 
-
 def prediction_check(prediction, actual, is_classification):
         print(f"\nPredictions:\n{prediction}")
         if actual != None:    
@@ -238,7 +226,7 @@ train_and_test(input_size = 784,
                output_size = 10, 
                inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 100,
+               epochs = 3,
                learning_rate = 0.01,
                training_questions = train_X_flat,
                training_answers = y_train_one_hot,
