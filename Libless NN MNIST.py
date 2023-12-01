@@ -5,7 +5,6 @@ random.seed(0)
 from keras.datasets import mnist
 from keras.utils import to_categorical
 import numpy as np
-# import cv2
 
 (train_X, train_y), (test_X, test_y) = mnist.load_data()
 train_X_flat = train_X.reshape(train_X.shape[0], -1)
