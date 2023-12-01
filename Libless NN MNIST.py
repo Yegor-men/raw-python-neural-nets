@@ -5,12 +5,29 @@ random.seed(0)
 from keras.datasets import mnist
 from keras.utils import to_categorical
 import numpy as np
+# import cv2
 
 (train_X, train_y), (test_X, test_y) = mnist.load_data()
 train_X_flat = train_X.reshape(train_X.shape[0], -1)
-test_X_flat = train_X.reshape(test_X.shape[0], -1)
+test_X_flat = test_X.reshape(test_X.shape[0], -1)
 y_train_one_hot = to_categorical(train_y, 10)
 y_test_one_hot = to_categorical(test_y, 10)
+
+
+# (train_X, train_y), (test_X, test_y) = mnist.load_data()
+
+# # Resize the images to 8x8
+# train_X_resized = np.array([cv2.resize(img, (8, 8)) for img in train_X])
+# test_X_resized = np.array([cv2.resize(img, (8, 8)) for img in test_X])
+
+# # Reshape the resized images to flatten them
+# train_X_flat = train_X_resized.reshape(train_X_resized.shape[0], -1)
+# test_X_flat = test_X_resized.reshape(test_X_resized.shape[0], -1)
+
+# # One-hot encode the labels
+# y_train_one_hot = to_categorical(train_y, 10)
+# y_test_one_hot = to_categorical(test_y, 10)
+
 
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
@@ -226,7 +243,7 @@ train_and_test(input_size = 784,
                learning_rate = 0.01,
                training_questions = train_X_flat,
                training_answers = y_train_one_hot,
-               batch_size = 16,
+               batch_size = 64,
                predict_questions = test_X_flat,
                predict_answers = y_test_one_hot,
                is_classification = True,
