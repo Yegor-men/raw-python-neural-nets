@@ -39,8 +39,13 @@ class Layer:
         elif self.activation_function_type == "Leaky_ReLU":
             self.post_activation_outputs = [0.01 * n if n < 0 else n for n in self.outputs]
         elif self.activation_function_type == "Softmax":
-            exp_outputs = [E**(n-max(self.outputs)) for n in self.outputs]
-            self.post_activation_outputs = [n / sum(exp_outputs) for n in exp_outputs]
+            exp_outputs = np.exp(self.outputs - np.max(self.outputs))
+            self.post_activation_outputs = exp_outputs / np.sum(exp_outputs)
+        elif self.activation_function_type == "Sigmoid":
+            self.post_activation_outputs = [1/(1 + E**(-n)) for n in self.outputs]
+        elif self.activation_function_type == "Sigmoid":
+            self.post_activation_outputs = [1 / (1 + np.exp(-n)) for n in self.outputs]
+            self.post_activation_outputs = np.clip(self.post_activation_outputs, 1e-15, 1 - 1e-15)
 
     def loss(self, prediced_list, expected_list, type):
         self.loss_type = type
@@ -220,7 +225,7 @@ iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 99)
 
 def prediction_check(prediction, actual, is_classification):
         # print(f"\nPredictions:\n{prediction}")
-        if actual is not None and actual.size > 0:
+        if actual is not None and len(actual) > 0:
             if is_classification == True:
                 total_correct = sum(1 for pred, actual_row in zip(prediction, actual) if np.argmax(pred) == np.argmax(actual_row))
                 print(f"\nTotal accuracy: {round((total_correct/len(prediction))*100,5)} %")
@@ -258,8 +263,8 @@ train_and_test(input_size = 4,
                neurons_per_layer = 20, 
                output_size = 3, 
                inner_neuron_activation = "ReLU", 
-               last_layer_activation = "Softmax", 
-               epochs = 100,
+               last_layer_activation = "Sigmoid", 
+               epochs = 10,
                learning_rate = 0.01,
                training_questions = iris_data.get_t_q(),
                training_answers = iris_data.get_t_a(),

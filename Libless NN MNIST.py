@@ -191,7 +191,7 @@ def one_hot_encoding(data, data_types):
 
 def prediction_check(prediction, actual, is_classification):
         # print(f"\nPredictions:\n{prediction}")
-        if actual is not None and actual.size > 0:
+        if actual is not None and len(actual) > 0:
             if is_classification == True:
                 total_correct = sum(1 for pred, actual_row in zip(prediction, actual) if np.argmax(pred) == np.argmax(actual_row))
                 print(f"\nTotal accuracy: {round((total_correct/len(prediction))*100,5)} %")
@@ -228,9 +228,9 @@ train_and_test(input_size = 784,
                inner_layers_amount = 2,
                neurons_per_layer = 16,
                output_size = 10, 
-               inner_neuron_activation = "Leaky_ReLU", 
+               inner_neuron_activation = "ReLU", 
                last_layer_activation = "Sigmoid", 
-               epochs = 10,
+               epochs = 1,
                learning_rate = 0.01,
                training_questions = train_X_flat,
                training_answers = y_train_one_hot,
