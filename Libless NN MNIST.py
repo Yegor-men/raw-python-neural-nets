@@ -60,13 +60,9 @@ class Layer:
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = [0 if self.outputs[i] < 0 and self.activation_function_type == "ReLU" else 0.01 * inputted_loss_array[i] if self.outputs[i] < 0 and self.activation_function_type == "Leaky_ReLU" else inputted_loss_array[i] for i in range(len(inputted_loss_array))]
         self.delta_biases = self.delta_biases + np.array(self.passed_on_loss_array)
-        for i in range(len(self.weights)):
-            for j in range(len(self.weights[0])):
-                self.delta_weights[i][j] += self.passed_on_loss_array[i]*self.previous_layer_outputs[j]
-        self.loss_to_pass = np.zeros_like(self.weights[0])
-        for i in range(len(self.loss_to_pass)):
-            for j in range(len(self.weights)):
-                self.loss_to_pass[i] += self.passed_on_loss_array[j] * self.weights[j][i]
+        self.delta_weights = self.delta_weights.astype('float64')
+        self.delta_weights += np.outer(self.passed_on_loss_array, self.previous_layer_outputs)
+        self.loss_to_pass = np.dot(self.passed_on_loss_array, self.weights)
 
     def update_w_and_b(self, batch_size):
         self.t += 1
