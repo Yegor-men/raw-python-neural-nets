@@ -54,17 +54,12 @@ class Layer:
     def back_prop(self, inputted_loss_array):
         self.passed_on_loss_array = [0 if self.outputs[i] < 0 and self.activation_function_type == "ReLU" else 0.01 * inputted_loss_array[i] if self.outputs[i] < 0 and self.activation_function_type == "Leaky_ReLU" else inputted_loss_array[i] for i in range(len(inputted_loss_array))]
         self.delta_biases = self.delta_biases + np.array(self.passed_on_loss_array)
-        for i in range(len(self.weights)):
-            for j in range(len(self.weights[0])):
-                self.delta_weights[i][j] += self.passed_on_loss_array[i]*self.previous_layer_outputs[j]
-        self.loss_to_pass = np.zeros_like(self.weights[0])
-        for i in range(len(self.loss_to_pass)):
-            for j in range(len(self.weights)):
-                self.loss_to_pass[i] += self.passed_on_loss_array[j] * self.weights[j][i]
+        self.delta_weights = self.delta_weights.astype('float64')
+        self.delta_weights += np.outer(self.passed_on_loss_array, self.previous_layer_outputs)
+        self.loss_to_pass = np.dot(self.passed_on_loss_array, self.weights)
 
     def update_w_and_b(self, batch_size):
         self.t += 1
-        index1, index2 = 0, 0  # Change these values accordingly
 
         self.delta_weights = (1 / batch_size) * np.array(self.delta_weights)
         self.m_weights = self.beta1 * self.m_weights + (1 - self.beta1) * self.delta_weights
@@ -73,7 +68,6 @@ class Layer:
         v_hat = (1 / (1 - self.beta2 ** self.t)) * self.v_weights
         self.weights = self.weights - self.learning_rate * (1 / (np.sqrt(v_hat) + self.epsilon)) * m_hat
 
-        index1 = 0  # Change these values accordingly
         self.delta_biases = (1 / batch_size) * np.array(self.delta_biases)
         self.m_biases = self.beta1 * self.m_biases + (1 - self.beta1) * self.delta_biases
         self.v_biases = self.beta2 * self.v_biases + (1 - self.beta2) * (self.delta_biases * self.delta_biases)
@@ -260,8 +254,8 @@ def train_and_test(input_size,
     # print(f"\nWeights:\n{neural.export_weights()}\n\nBiases:\n{neural.export_biases()}")
 
 train_and_test(input_size = 4, 
-               inner_layers_amount = 2, 
-               neurons_per_layer = 8, 
+               inner_layers_amount = 10, 
+               neurons_per_layer = 20, 
                output_size = 3, 
                inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
