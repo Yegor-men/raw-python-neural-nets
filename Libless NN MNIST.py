@@ -150,7 +150,7 @@ class NN:
                     self.layers[-l-2].back_prop(self.layers[-l-1].loss_to_pass)
                 if current_batch == batch_size:
                     current_batch = 0
-                    print(f"{round(batch_loss/batch_size,3)}")
+                    # print(f"{j} {round(batch_loss/batch_size,3)}")
                     for g in range(len(self.layers)):
                         self.layers[g].update_w_and_b(batch_size)
                     batch_loss = 0
@@ -199,10 +199,10 @@ def one_hot_encoding(data, data_types):
     return(output)
 
 def prediction_check(prediction, actual, is_classification):
-        print(f"\nPredictions:\n{prediction}")
-        if actual != None:    
+        # print(f"\nPredictions:\n{prediction}")
+        if actual is not None and actual.size > 0:
             if is_classification == True:
-                total_correct = sum(1 for pred, actual_row in zip(prediction, actual) if pred.index(max(pred)) == actual_row.index(max(actual_row)))
+                total_correct = sum(1 for pred, actual_row in zip(prediction, actual) if np.argmax(pred) == np.argmax(actual_row))
                 print(f"\nTotal accuracy: {round((total_correct/len(prediction))*100,5)} %")
             else:
                 losses = [sum(0.5 * (prediction[i][j] - actual[i][j]) ** 2 for j in range(len(prediction[0]))) / len(prediction[0]) for i in range(len(prediction))]
@@ -239,7 +239,7 @@ train_and_test(input_size = 784,
                output_size = 10, 
                inner_neuron_activation = "ReLU", 
                last_layer_activation = "Softmax", 
-               epochs = 3,
+               epochs = 1,
                learning_rate = 0.01,
                training_questions = train_X_flat,
                training_answers = y_train_one_hot,

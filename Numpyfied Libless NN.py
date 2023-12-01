@@ -219,10 +219,10 @@ class QuestionsAndAnswers():
 iris_data = QuestionsAndAnswers(questions, one_hot_encoding(labels,3), 99)
 
 def prediction_check(prediction, actual, is_classification):
-        print(f"\nPredictions:\n{prediction}")
-        if actual != None:    
+        # print(f"\nPredictions:\n{prediction}")
+        if actual is not None and actual.size > 0:
             if is_classification == True:
-                total_correct = sum(1 for pred, actual_row in zip(prediction, actual) if pred.index(max(pred)) == actual_row.index(max(actual_row)))
+                total_correct = sum(1 for pred, actual_row in zip(prediction, actual) if np.argmax(pred) == np.argmax(actual_row))
                 print(f"\nTotal accuracy: {round((total_correct/len(prediction))*100,5)} %")
             else:
                 losses = [sum(0.5 * (prediction[i][j] - actual[i][j]) ** 2 for j in range(len(prediction[0]))) / len(prediction[0]) for i in range(len(prediction))]
