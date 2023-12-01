@@ -14,21 +14,6 @@ y_train_one_hot = to_categorical(train_y, 10)
 y_test_one_hot = to_categorical(test_y, 10)
 
 
-# (train_X, train_y), (test_X, test_y) = mnist.load_data()
-
-# # Resize the images to 8x8
-# train_X_resized = np.array([cv2.resize(img, (8, 8)) for img in train_X])
-# test_X_resized = np.array([cv2.resize(img, (8, 8)) for img in test_X])
-
-# # Reshape the resized images to flatten them
-# train_X_flat = train_X_resized.reshape(train_X_resized.shape[0], -1)
-# test_X_flat = test_X_resized.reshape(test_X_resized.shape[0], -1)
-
-# # One-hot encode the labels
-# y_train_one_hot = to_categorical(train_y, 10)
-# y_test_one_hot = to_categorical(test_y, 10)
-
-
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
         self.biases = np.array([1 * (random.random() * 2 - 1) for n in range(height)])
@@ -62,8 +47,14 @@ class Layer:
         elif self.activation_function_type == "Leaky_ReLU":
             self.post_activation_outputs = [0.01 * n if n < 0 else n for n in self.outputs]
         elif self.activation_function_type == "Softmax":
-            exp_outputs = [E**(n-max(self.outputs)) for n in self.outputs]
-            self.post_activation_outputs = [n / sum(exp_outputs) for n in exp_outputs]
+            exp_outputs = np.exp(self.outputs - np.max(self.outputs))
+            self.post_activation_outputs = exp_outputs / np.sum(exp_outputs)
+        elif self.activation_function_type == "Sigmoid":
+            self.post_activation_outputs = [1/(1 + E**(-n)) for n in self.outputs]
+        elif self.activation_function_type == "Sigmoid":
+            self.post_activation_outputs = [1 / (1 + np.exp(-n)) for n in self.outputs]
+            self.post_activation_outputs = np.clip(self.post_activation_outputs, 1e-15, 1 - 1e-15)
+
 
     def loss(self, prediced_list, expected_list, type):
         self.loss_type = type
@@ -234,16 +225,16 @@ def train_and_test(input_size,
     # print(f"\nWeights:\n{neural.export_weights()}\n\nBiases:\n{neural.export_biases()}")
 
 train_and_test(input_size = 784, 
-               inner_layers_amount = 2, 
-               neurons_per_layer = 16, 
+               inner_layers_amount = 2,
+               neurons_per_layer = 16,
                output_size = 10, 
-               inner_neuron_activation = "ReLU", 
-               last_layer_activation = "Softmax", 
-               epochs = 1,
+               inner_neuron_activation = "Leaky_ReLU", 
+               last_layer_activation = "Sigmoid", 
+               epochs = 10,
                learning_rate = 0.01,
                training_questions = train_X_flat,
                training_answers = y_train_one_hot,
-               batch_size = 64,
+               batch_size = 32,
                predict_questions = test_X_flat,
                predict_answers = y_test_one_hot,
                is_classification = True,
