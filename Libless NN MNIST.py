@@ -5,6 +5,7 @@ random.seed(0)
 from keras.datasets import mnist
 from keras.utils import to_categorical
 import numpy as np
+np.random.seed(0)
 
 (train_X, train_y), (test_X, test_y) = mnist.load_data()
 train_X_flat = train_X.reshape(train_X.shape[0], -1)
@@ -15,10 +16,10 @@ y_test_one_hot = to_categorical(test_y, 10)
 
 class Layer:
     def __init__(self, previous_height, height, activation_function_type):
-        self.biases = np.array([1 * (random.random() * 2 - 1) for n in range(height)])
-        self.weights = np.array([[(1 * (random.random()) * 2 - 1) for n in range(previous_height)] for m in range(height)])
-        self.delta_biases = np.array([0] * height)
-        self.delta_weights = np.array([[0] * previous_height for n in range(height)])
+        self.biases = np.random.uniform(-1, 1, size=height)
+        self.weights = np.random.uniform(-1, 1, size=(height, previous_height))
+        self.delta_biases = np.zeros_like(self.biases)
+        self.delta_weights = np.zeros_like(self.weights)
         self.activation_function_type = activation_function_type
         self.t = 0
         self.m = None
@@ -49,27 +50,34 @@ class Layer:
             exp_outputs = np.exp(self.outputs - np.max(self.outputs))
             self.post_activation_outputs = exp_outputs / np.sum(exp_outputs)
         elif self.activation_function_type == "Sigmoid":
-            self.post_activation_outputs = [1/(1 + E**(-n)) for n in self.outputs]
-        elif self.activation_function_type == "Sigmoid":
             self.post_activation_outputs = [1 / (1 + np.exp(-n)) for n in self.outputs]
             self.post_activation_outputs = np.clip(self.post_activation_outputs, 1e-15, 1 - 1e-15)
 
+    def loss(self, predicted_list, expected_list, loss_type):
+        self.loss_type = loss_type
 
-    def loss(self, prediced_list, expected_list, type):
-        self.loss_type = type
         if self.loss_type == "mse":
-            self.mean_loss = 0.5*(sum((prediced_list[i]-expected_list[i])**2 for i in range(len(prediced_list))))/len(prediced_list)
-            self.d_loss = [(prediced_list[i] - expected_list[i]) for i in range(len(prediced_list))]
+            errors = predicted_list - expected_list
+            self.mean_loss = np.mean(0.5 * np.square(errors))
+            self.d_loss = errors
+
         elif self.loss_type == "log":
-            self.mean_loss = sum(-expected_list[i] * math.log(self.post_activation_outputs[i] + 1e-15) for i in range(len(self.post_activation_outputs)))
-            self.d_loss = [self.post_activation_outputs[i]-expected_list[i] for i in range(len(self.post_activation_outputs))]
+            epsilon = 1e-15
+            predicted_list = np.clip(predicted_list, epsilon, 1 - epsilon)
+            self.mean_loss = -np.mean(expected_list * np.log(predicted_list))*len(predicted_list)
+            self.d_loss = predicted_list - expected_list
 
     def back_prop(self, inputted_loss_array):
-        self.passed_on_loss_array = [0 if self.outputs[i] < 0 and self.activation_function_type == "ReLU" else 0.01 * inputted_loss_array[i] if self.outputs[i] < 0 and self.activation_function_type == "Leaky_ReLU" else inputted_loss_array[i] for i in range(len(inputted_loss_array))]
-        self.delta_biases = self.delta_biases + np.array(self.passed_on_loss_array)
-        self.delta_weights = self.delta_weights.astype('float64')
+        relu_condition = (self.outputs < 0) & (self.activation_function_type == "ReLU")
+        leaky_relu_condition = (self.outputs < 0) & (self.activation_function_type == "Leaky_ReLU")
+
+        self.passed_on_loss_array = np.where(relu_condition, 0, inputted_loss_array)
+        self.passed_on_loss_array = np.where(leaky_relu_condition, 0.01 * inputted_loss_array, self.passed_on_loss_array)
+
+        self.delta_biases += self.passed_on_loss_array
         self.delta_weights += np.outer(self.passed_on_loss_array, self.previous_layer_outputs)
         self.loss_to_pass = np.dot(self.passed_on_loss_array, self.weights)
+
 
     def update_w_and_b(self, batch_size):
         self.t += 1
@@ -130,7 +138,7 @@ class NN:
                 self.layers[-1].forward(self.layers[-2].post_activation_outputs)
                 self.layers[-1].activation_function()
                 #now for loss
-                loss_function = "log" if self.last_layer_activation == "Softmax" else "mse"
+                loss_function = "log" if self.last_layer_activation == "Softmax" or "Sigmoid" else "mse"
                 self.layers[-1].loss(self.layers[-1].post_activation_outputs, training_answers[j],loss_function)
                 batch_loss += self.layers[-1].mean_loss
                 current_epoch_loss += self.layers[-1].mean_loss
@@ -224,16 +232,16 @@ def train_and_test(input_size,
     # print(f"\nWeights:\n{neural.export_weights()}\n\nBiases:\n{neural.export_biases()}")
 
 train_and_test(input_size = 784, 
-               inner_layers_amount = 1,
-               neurons_per_layer = 128,
+               inner_layers_amount = 2,
+               neurons_per_layer = 16,
                output_size = 10, 
                inner_neuron_activation = "ReLU", 
                last_layer_activation = "Sigmoid", 
                epochs = 10,
-               learning_rate = 0.01,
+               learning_rate = 0.001,
                training_questions = train_X_flat,
                training_answers = y_train_one_hot,
-               batch_size = 1024,
+               batch_size = 100,
                predict_questions = test_X_flat,
                predict_answers = y_test_one_hot,
                is_classification = True,
