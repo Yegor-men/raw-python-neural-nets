@@ -259,10 +259,10 @@ def train_and_test(input_size,
     # print(f"\nWeights:\n{neural.export_weights()}\n\nBiases:\n{neural.export_biases()}")
 
 train_and_test(input_size = 4, 
-               inner_layers_amount = 10, 
-               neurons_per_layer = 20, 
+               inner_layers_amount = 3, 
+               neurons_per_layer = 16, 
                output_size = 3, 
-               inner_neuron_activation = "ReLU", 
+               inner_neuron_activation = "Leaky_ReLU", 
                last_layer_activation = "Sigmoid", 
                epochs = 10,
                learning_rate = 0.01,
